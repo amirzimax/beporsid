@@ -183,6 +183,14 @@
   /* تب‌های انتخاب پلتفرم فروشگاه: لوگو بالای نام، و همه در یک کادر مربعِ هم‌اندازه.
      چیدمان عمودی عمداً روی کلاس جدا است، نه روی .seg button، چون همان seg در
      تب‌های گفتگوها و پنل مدیریت هم استفاده می‌شود و آن‌ها باید افقی بمانند. */
+  /* نوار تب زیرمجموعه‌های تنظیمات، بالای هر بخش. روی موبایل چهار تب در عرض کم جا
+     نمی‌شوند، پس به‌جای فشرده شدن، افقی اسکرول می‌شود. */
+  .settings-tabs { margin-bottom: 20px; overflow-x: auto; scrollbar-width: none; }
+  .settings-tabs::-webkit-scrollbar { display: none; }
+  @media (max-width: 620px) {
+    .settings-tabs button { flex: none; white-space: nowrap; padding-inline: 14px; }
+  }
+
   .seg button.seg-platform { flex-direction: column; gap: 7px; padding: 11px 4px; }
   .seg-platform .seg-logo { width: 22px; height: 22px; }
   .linklike { background: none; border: 0; padding: 0; margin: 0; color: var(--firooze); font-weight: 600; font-family: inherit; font-size: 12.5px; cursor: pointer; }
@@ -1486,12 +1494,11 @@
   const NAV = [
     { id: 'overview',   label: 'نمای کلی',        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>' },
     { id: 'conversations', label: 'گفتگوها',      icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4c0-1.1.9-2 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/></svg>' },
-    { id: 'shop',       label: 'اطلاعات فروشگاه', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-4"/><path d="M9 9v.01"/><path d="M9 12v.01"/><path d="M9 15v.01"/><path d="M9 18v.01"/></svg>' },
-    { id: 'store',      label: 'اتصال فروشگاه',   icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>' },
+    // چهار بخش تنظیماتی زیر یک منو جمع شده‌اند و با تب‌های داخلی باز می‌شوند؛ قبلاً
+    // هرکدام یک آیتم جدا در منو بودند و فهرست را شلوغ می‌کردند.
+    { id: 'settings',   label: 'تنظیمات',         icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.2 2h-.4a2 2 0 0 0-2 2v.2a2 2 0 0 1-1 1.7l-.4.2a2 2 0 0 1-2 0l-.2-.1a2 2 0 0 0-2.7.7l-.2.4a2 2 0 0 0 .7 2.7l.2.1a2 2 0 0 1 1 1.7v.5a2 2 0 0 1-1 1.7l-.2.1a2 2 0 0 0-.7 2.7l.2.4a2 2 0 0 0 2.7.7l.2-.1a2 2 0 0 1 2 0l.4.2a2 2 0 0 1 1 1.7v.2a2 2 0 0 0 2 2h.4a2 2 0 0 0 2-2v-.2a2 2 0 0 1 1-1.7l.4-.2a2 2 0 0 1 2 0l.2.1a2 2 0 0 0 2.7-.7l.2-.4a2 2 0 0 0-.7-2.7l-.2-.1a2 2 0 0 1-1-1.7v-.5a2 2 0 0 1 1-1.7l.2-.1a2 2 0 0 0 .7-2.7l-.2-.4a2 2 0 0 0-2.7-.7l-.2.1a2 2 0 0 1-2 0l-.4-.2a2 2 0 0 1-1-1.7V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>' },
     { id: 'knowledge',  label: 'دانش تکمیلی',     icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>' },
-    { id: 'appearance', label: 'ظاهر و جای‌گیری', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.9 0 1.6-.7 1.6-1.6 0-.4-.2-.8-.4-1.1-.3-.3-.4-.7-.4-1.1 0-.9.7-1.6 1.6-1.6H16c3.3 0 6-2.7 6-6 0-4.9-4.5-8.6-10-8.6"/></svg>' },
     { id: 'install',    label: 'کد نصب',          icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></svg>' },
-    { id: 'telegram',   label: 'ربات تلگرام',     icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>' },
     { id: 'support',    label: 'پشتیبانی',        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>' },
     { id: 'billing',    label: 'مدیریت مالی',     icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M2 10h20"/></svg>' },
     // فقط برای مدیر سیستم؛ برای بقیه‌ی حساب‌ها اصلاً رندر نمی‌شود
@@ -1550,10 +1557,45 @@
     const html = visibleNav().map(n => `<a href="#${n.id}" data-nav="${n.id}" onclick="go('${n.id}'); return false;">${n.icon}<span>${n.label}</span></a>`).join('');
     $('nav-desktop').innerHTML = html; $('nav-mobile').innerHTML = html;
   }
+
+  /* ---------- زیرمجموعه‌های «تنظیمات» ---------- */
+  // این چهار بخش در DOM همان <section> های قبلی‌اند و دست‌نخورده مانده‌اند؛ فقط به‌جای
+  // چهار آیتم در منوی کناری، با یک نوار تب داخل خودِ بخش جابه‌جا می‌شوند. آدرس هر کدام
+  // هم مثل قبل کار می‌کند (#shop ،#store …) تا لینک‌های قدیمی و چک‌لیست راه‌اندازی نشکنند.
+  const SETTINGS_TABS = [
+    { id: 'shop',       label: 'اطلاعات فروشگاه' },
+    { id: 'store',      label: 'اتصال فروشگاه' },
+    { id: 'telegram',   label: 'ربات تلگرام' },
+    { id: 'appearance', label: 'ظاهر و جای‌گیری' }
+  ];
+  const isSettingsTab = id => SETTINGS_TABS.some(t => t.id === id);
+
+  // نوار تب یک عنصر واحد است که به بالای بخش فعال منتقل می‌شود؛ این‌طوری به ترتیب
+  // بخش‌ها در فایل وابسته نیست (این چهار بخش پشت‌سرهم نیستند).
+  function mountSettingsTabs(activeId) {
+    let bar = $('settings-tabs');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'settings-tabs';
+      bar.className = 'seg settings-tabs';
+      bar.innerHTML = SETTINGS_TABS.map(t =>
+        `<button data-stab="${t.id}" onclick="go('${t.id}')">${t.label}</button>`).join('');
+    }
+    const section = document.querySelector(`[data-section="${activeId}"]`);
+    if (section && bar.parentElement !== section) section.insertBefore(bar, section.firstChild);
+    bar.querySelectorAll('[data-stab]').forEach(b => b.classList.toggle('active', b.dataset.stab === activeId));
+  }
+
   function go(id) {
-    if (!visibleNav().some(n => n.id === id)) id = 'overview';
+    // «تنظیمات» خودش صفحه‌ای ندارد؛ به اولین زیرمجموعه‌اش می‌رود
+    if (id === 'settings') id = SETTINGS_TABS[0].id;
+    if (!visibleNav().some(n => n.id === id) && !isSettingsTab(id)) id = 'overview';
+
     document.querySelectorAll('[data-section]').forEach(s => s.classList.toggle('active', s.dataset.section === id));
-    document.querySelectorAll('[data-nav]').forEach(a => a.classList.toggle('active', a.dataset.nav === id));
+    // وقتی داخل یکی از زیرمجموعه‌هاییم، آیتم «تنظیمات» در منو فعال بماند
+    const navId = isSettingsTab(id) ? 'settings' : id;
+    document.querySelectorAll('[data-nav]').forEach(a => a.classList.toggle('active', a.dataset.nav === navId));
+    if (isSettingsTab(id)) mountSettingsTabs(id);
     history.replaceState(null, '', '#' + id);
     window.scrollTo({ top: 0 });
     // صندوق گفتگوها هر بار که باز می‌شود تازه‌سازی می‌شود؛ قبلاً فقط یک‌بار در کل عمر صفحه
