@@ -1953,20 +1953,24 @@ async function runAssistant(shop, { message, history, page }) {
     { role: 'user', content: message }
   ];
 
-  async function callGapGPT() {
+  // withTools=false یعنی مدل حق فراخوانی ابزار ندارد و مجبور است جواب متنی بدهد؛
+  // برای درخواست نهایی وقتی مدل در حلقه‌ی ابزار گیر کرده استفاده می‌شود.
+  async function callGapGPT({ withTools = true } = {}) {
+    const payload = {
+      model: GAPGPT_MODEL,
+      messages,
+      temperature: 0.3,
+      reasoning: { enabled: false }
+    };
+    if (withTools) payload.tools = tools;
+
     const r = await fetch(GAPGPT_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${GAPGPT_API_KEY}`
       },
-      body: JSON.stringify({
-        model: GAPGPT_MODEL,
-        messages,
-        tools,
-        temperature: 0.3,
-        reasoning: { enabled: false }
-      })
+      body: JSON.stringify(payload)
     });
     const data = await r.json();
     if (!r.ok) {
@@ -2038,7 +2042,23 @@ async function runAssistant(shop, { message, history, page }) {
     choice = data.choices[0];
   }
 
-  const replyText = choice.message.content || 'متاسفم، نتوانستم پاسخ مناسبی پیدا کنم.';
+  // مدل گاهی سقف دورهای ابزار را پر می‌کند بدون اینکه جواب متنی بدهد (یا content خالی
+  // برمی‌گرداند). قبلاً در این حالت مشتری پیام بی‌فایده‌ی «نتوانستم پاسخ پیدا کنم» می‌گرفت —
+  // در آزمایش‌ها حدود یک‌چهارم پاسخ‌ها. حالا یک بار دیگر بدون ابزار صدایش می‌زنیم تا مجبور
+  // شود از روی همان اطلاعاتی که تا اینجا جمع کرده جواب بدهد.
+  let replyText = choice.message.content;
+  if (!replyText) {
+    try {
+      const finalData = await callGapGPT({ withTools: false });
+      replyText = finalData.choices?.[0]?.message?.content || '';
+    } catch (e) {
+      console.error('خطای درخواست نهایی بدون ابزار:', e?.message || e);
+    }
+  }
+  if (!replyText) {
+    replyText = 'متاسفم، الان نتوانستم جواب دقیقی پیدا کنم. می‌شود سوالتان را کوتاه‌تر و ساده‌تر بپرسید؟';
+  }
+
   const products = lastProducts.slice(0, 4);
 
   return {
