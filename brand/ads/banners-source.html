@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #666; font-family: 'Vazirmatn', Tahoma, sans-serif; padding: 20px; }
+
+  .ad { position: relative; overflow: hidden; direction: rtl; }
+  /* پس‌زمینه‌ی برند: تیره با هاله‌ی فیروزه‌ای و زعفرانی، هم‌خانواده با تصویر OG سایت */
+  .dark { background: #0d1f22; }
+  .dark::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 78% 18%, rgba(23,167,159,.55), transparent 62%),
+      radial-gradient(circle at 12% 92%, rgba(224,161,60,.28), transparent 66%);
+  }
+  .ad > * { position: relative; z-index: 1; }
+
+  .brand { display: inline-flex; align-items: center; gap: 7px; }
+  .mark { border-radius: 26%; background: linear-gradient(145deg, #1cb5ac, #0f6f6a); display: grid; place-items: center; flex: none; }
+  .mark svg { fill: #fff; }
+  .brand b { color: #fff; font-weight: 900; letter-spacing: -.02em; }
+
+  h2 { color: #fff; font-weight: 900; letter-spacing: -.03em; line-height: 1.45; }
+  .hl { color: #6fd8cf; }
+  p.sub { color: rgba(255,255,255,.72); font-weight: 500; line-height: 1.7; }
+  .cta {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #e0a13c; color: #3d2a06; font-weight: 800; border-radius: 999px;
+    white-space: nowrap;
+  }
+  .free { color: #6fd8cf; font-weight: 700; }
+
+  /* حباب چت تزئینی */
+  .bub { position: absolute; border-radius: 50%; background: rgba(255,255,255,.07); }
+
+  /* ---------- ۳۰۰×۲۵۰ مستطیل میانی ---------- */
+  #a { width: 300px; height: 250px; padding: 17px 17px 15px; display: flex; flex-direction: column; }
+  #a .mark { width: 22px; height: 22px; } #a .mark svg { width: 12px; height: 12px; }
+  #a .brand b { font-size: 14px; }
+  #a h2 { font-size: 19px; margin-top: 13px; line-height: 1.5; }
+  #a p.sub { font-size: 12px; margin-top: 8px; }
+  #a .foot { margin-top: auto; }
+  #a .cta { font-size: 13px; padding: 9px 17px; }
+  #a .free { display: block; font-size: 11px; margin-top: 7px; }
+
+  /* ---------- ۷۲۸×۹۰ افقی ---------- */
+  #b { width: 728px; height: 90px; padding: 0 20px; display: flex; align-items: center; gap: 16px; }
+  #b .mark { width: 28px; height: 28px; } #b .mark svg { width: 15px; height: 15px; }
+  #b .brand { flex: none; }
+  #b .brand b { font-size: 16px; }
+  #b h2 { font-size: 17px; flex: 1; line-height: 1.55; }
+  #b .cta { font-size: 14px; padding: 10px 24px; flex: none; }
+
+  /* ---------- ۳۲۰×۱۰۰ موبایل ---------- */
+  #c { width: 320px; height: 100px; padding: 11px 13px; display: flex; align-items: center; gap: 10px; }
+  #c .mark { width: 24px; height: 24px; } #c .mark svg { width: 13px; height: 13px; }
+  #c .txt { flex: 1; min-width: 0; }
+  #c h2 { font-size: 14px; line-height: 1.5; }
+  #c p.sub { font-size: 10.5px; margin-top: 5px; }
+  #c .cta { font-size: 12px; padding: 8px 15px; flex: none; }
+
+  /* ---------- ۶۰۰×۵۰۰ نیتیو / شبکه‌های اجتماعی ---------- */
+  #d { width: 600px; height: 500px; padding: 44px 40px; display: flex; flex-direction: column; }
+  #d .mark { width: 36px; height: 36px; } #d .mark svg { width: 19px; height: 19px; }
+  #d .brand b { font-size: 22px; }
+  #d h2 { font-size: 40px; margin-top: 34px; }
+  #d p.sub { font-size: 17px; margin-top: 16px; max-width: 24em; }
+  #d .cta { font-size: 17px; padding: 14px 30px; margin-top: auto; align-self: flex-start; }
+  #d .free { display: block; font-size: 14px; margin-top: 12px; }
+  /* گفتگوی کوچک نمونه، تا در یک نگاه معلوم شود محصول چیست */
+  #d .chat { margin-top: 30px; display: grid; gap: 8px; max-width: 330px; }
+  #d .msg { font-size: 14px; padding: 9px 14px; border-radius: 14px; line-height: 1.6; }
+  #d .me { background: #17a79f; color: #fff; border-bottom-right-radius: 4px; justify-self: start; }
+  #d .bot { background: #fff; color: #13262b; border-bottom-left-radius: 4px; justify-self: end; }
+
+  .label { color: #fff; font: 600 13px Vazirmatn; margin: 26px 0 8px; }
+</style>
+</head>
+<body>
+
+<div class="label">۳۰۰×۲۵۰</div>
+<div class="ad dark" id="a">
+  <span class="brand"><span class="mark"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.44 1.15 4.65 3 6.3V22l4.1-2.05c.93.2 1.9.3 2.9.3 5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg></span><b>بپرسید</b></span>
+  <h2>مشتری شب سوال می‌پرسد،<br><span class="hl">جوابش را چه کسی می‌دهد؟</span></h2>
+  <p class="sub">دستیار هوش مصنوعی که به موجودی واقعی فروشگاهت وصل است.</p>
+  <div class="foot">
+    <span class="cta">رایگان امتحان کن</span>
+    <span class="free">۲۰۰ پاسخ رایگان · بدون کارت بانکی</span>
+  </div>
+</div>
+
+<div class="label">۷۲۸×۹۰</div>
+<div class="ad dark" id="b">
+  <span class="brand"><span class="mark"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.44 1.15 4.65 3 6.3V22l4.1-2.05c.93.2 1.9.3 2.9.3 5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg></span><b>بپرسید</b></span>
+  <h2>فروشگاه اینترنتی داری؟<br><span class="hl">دستیار هوشمند، ۲۴ ساعته جواب مشتری‌هایت را می‌دهد.</span></h2>
+  <span class="cta">۲۰۰ پاسخ رایگان</span>
+</div>
+
+<div class="label">۳۲۰×۱۰۰</div>
+<div class="ad dark" id="c">
+  <span class="mark"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.44 1.15 4.65 3 6.3V22l4.1-2.05c.93.2 1.9.3 2.9.3 5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg></span>
+  <div class="txt">
+    <h2>مشتری سوال دارد؟<br><span class="hl">همان لحظه جواب بگیرد.</span></h2>
+    <p class="sub">چت‌بات فروش · ۲۰۰ پاسخ رایگان</p>
+  </div>
+  <span class="cta">شروع</span>
+</div>
+
+<div class="label">۶۰۰×۵۰۰ (نیتیو / اینستاگرام)</div>
+<div class="ad dark" id="d">
+  <span class="brand"><span class="mark"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.44 1.15 4.65 3 6.3V22l4.1-2.05c.93.2 1.9.3 2.9.3 5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg></span><b>بپرسید</b></span>
+  <h2>هر مشتری که جواب نگیرد،<br><span class="hl">مشتری رقیبت می‌شود.</span></h2>
+  <div class="chat">
+    <div class="msg me">این مدل موجوده؟ فردا لازمش دارم</div>
+    <div class="msg bot">بله، ۳ عدد موجود است و ۲ تا ۴ روز کاری ارسال می‌شود.</div>
+  </div>
+  <span class="cta">رایگان راه‌اندازی کن</span>
+  <span class="free">۲۰۰ پاسخ رایگان در ماه · بدون کارت بانکی</span>
+</div>
+
+</body>
+</html>
