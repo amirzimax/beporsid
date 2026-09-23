@@ -182,6 +182,7 @@
   .seg button.active .seg-logo { opacity: 1; filter: none; }
   .seg-logo-shopfa { height: 17px; width: auto; }
   .seg-logo-woo { width: 34px; height: auto; }
+  .seg-logo-portal { width: 19px; height: 19px; }
   .linklike { background: none; border: 0; padding: 0; margin: 0; color: var(--firooze); font-weight: 600; font-family: inherit; font-size: 12.5px; cursor: pointer; }
   .linklike:hover { text-decoration: underline; }
   .linklike:disabled { color: var(--ink-faint); cursor: default; text-decoration: none; }
@@ -867,6 +868,7 @@
           <div class="seg" style="margin-bottom:22px">
             <button id="platform-shopfa" class="active" onclick="switchPlatform('shopfa')"><svg class="seg-logo seg-logo-shopfa" aria-hidden="true" focusable="false" viewBox="1138 0 721 850" version="1.1" xmlns="http://www.w3.org/2000/svg"> <g xmlns="http://www.w3.org/2000/svg" id="#233f87ff"> <path fill="#233f87" opacity="1.00" d=" M 1284.22 0.00 L 1285.02 0.00 C 1289.09 0.98 1292.67 4.46 1291.90 8.94 C 1290.28 29.96 1288.64 50.99 1286.89 72.01 C 1286.91 76.99 1281.79 80.59 1277.08 79.07 C 1247.47 73.55 1217.79 68.30 1188.22 62.63 C 1181.50 61.56 1180.42 51.41 1186.74 48.89 C 1219.23 32.59 1251.55 15.92 1284.22 0.00 Z"> </path> <path fill="#233f87" opacity="1.00" d=" M 1313.39 0.00 L 1316.03 0.00 C 1471.00 33.55 1626.08 66.62 1781.08 100.00 C 1789.60 100.50 1792.80 112.88 1785.16 117.03 C 1755.82 132.81 1726.20 148.14 1696.81 163.85 C 1693.93 165.52 1690.59 166.68 1687.28 165.72 C 1561.16 139.12 1435.02 112.61 1308.91 86.02 C 1303.72 85.33 1299.99 80.27 1300.82 75.11 C 1302.57 53.07 1304.12 31.02 1305.95 8.99 C 1306.02 4.60 1309.50 1.40 1313.39 0.00 Z"> </path> <path fill="#4056a1" opacity="1.00" d=" M 1166.06 83.92 C 1165.81 78.01 1171.70 72.89 1177.52 74.50 C 1346.12 109.87 1514.71 145.36 1683.31 180.74 C 1688.22 181.42 1692.20 185.91 1691.71 190.95 C 1684.77 406.99 1677.77 623.04 1670.83 839.08 C 1671.28 844.56 1666.79 848.47 1661.99 850.00 L 1661.89 850.00 C 1489.50 798.82 1316.84 748.48 1144.41 697.46 C 1139.92 696.25 1137.27 691.60 1137.81 687.10 C 1147.24 486.04 1156.64 284.98 1166.06 83.92 M 1251.14 204.11 C 1236.48 221.55 1240.99 250.95 1260.59 262.80 C 1249.43 316.73 1250.78 373.67 1266.52 426.56 C 1277.21 461.14 1296.14 494.53 1325.80 516.18 C 1378.50 554.34 1457.93 554.30 1507.38 510.36 C 1559.08 465.03 1579.88 393.73 1580.70 326.85 C 1599.35 319.40 1609.32 296.91 1603.00 277.97 C 1595.49 249.36 1554.25 240.95 1535.53 263.47 C 1515.20 284.64 1527.88 324.55 1557.22 329.10 C 1555.78 388.61 1537.57 452.08 1491.43 492.45 C 1440.66 537.59 1352.86 526.36 1314.28 470.72 C 1274.37 412.50 1270.52 336.36 1283.66 268.91 C 1316.00 269.37 1334.05 226.12 1312.00 202.98 C 1296.94 184.76 1265.48 185.30 1251.14 204.11 Z"> </path> <path fill="#233f87" opacity="1.00" d=" M 1800.41 125.55 C 1805.73 122.00 1814.10 125.55 1814.77 132.04 C 1829.99 322.87 1843.19 513.93 1859.00 704.69 L 1859.00 710.13 C 1857.35 715.99 1851.72 718.81 1847.29 722.28 C 1799.31 758.65 1751.31 794.99 1703.34 831.36 C 1697.19 836.05 1687.18 831.09 1688.00 823.14 C 1694.25 610.38 1700.23 397.61 1706.73 184.84 C 1706.75 180.38 1707.18 175.05 1711.73 172.81 C 1741.21 156.91 1770.91 141.41 1800.41 125.55 Z"> </path> </g> </svg><span>شاپفا</span></button>
             <button id="platform-woocommerce" onclick="switchPlatform('woocommerce')"><svg class="seg-logo seg-logo-woo" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg" version="1.1" role="img" viewBox="0 0 95 26" preserveAspectRatio="xMidYMid" height="26" width="95" > <path d="M12.0825 25.2704C14.8471 25.2704 17.0657 23.9052 18.7381 20.7651L22.4584 13.8023V19.707C22.4584 23.1884 24.7111 25.2704 28.1925 25.2704C30.923 25.2704 32.9368 24.0758 34.8822 20.7651L43.4492 6.29339C45.3264 3.11918 43.9953 0.72998 39.8654 0.72998C37.6469 0.72998 36.2134 1.44674 34.9164 3.87006L29.0117 14.9628V5.09879C29.0117 2.1635 27.6123 0.72998 25.0183 0.72998C22.9704 0.72998 21.3321 1.6174 20.0692 4.07485L14.5058 14.9628V5.20119C14.5058 2.0611 13.2088 0.72998 10.0687 0.72998H3.65206C1.22873 0.72998 0 1.85632 0 3.93833C0 6.02034 1.29699 7.21494 3.65206 7.21494H6.28017V19.6729C6.28017 23.1884 8.63523 25.2704 12.0825 25.2704Z" fill="#873EFF"/> <path fill-rule="evenodd" clip-rule="evenodd" d="M55.9772 0.72998C48.9803 0.72998 43.6217 5.95208 43.6217 13.0173C43.6217 20.0825 49.0144 25.2704 55.9772 25.2704C62.94 25.2704 68.2645 20.0483 68.2986 13.0173C68.2986 5.95208 62.94 0.72998 55.9772 0.72998ZM55.9772 17.7274C53.3491 17.7274 51.5401 15.7478 51.5401 13.0173C51.5401 10.2868 53.3491 8.27301 55.9772 8.27301C58.6053 8.27301 60.4143 10.2868 60.4143 13.0173C60.4143 15.7478 58.6395 17.7274 55.9772 17.7274Z" fill="#873EFF"/> <path fill-rule="evenodd" clip-rule="evenodd" d="M70.0369 13.0173C70.0369 5.95208 75.3955 0.72998 82.3583 0.72998C89.3211 0.72998 94.6797 5.98621 94.6797 13.0173C94.6797 20.0483 89.3211 25.2704 82.3583 25.2704C75.3955 25.2704 70.0369 20.0825 70.0369 13.0173ZM77.9554 13.0173C77.9554 15.7478 79.6961 17.7274 82.3583 17.7274C84.9864 17.7274 86.7954 15.7478 86.7954 13.0173C86.7954 10.2868 84.9864 8.27301 82.3583 8.27301C79.7302 8.27301 77.9554 10.2868 77.9554 13.0173Z" fill="#873EFF"/> </svg><span>ووکامرس</span></button>
+            <button id="platform-portal" onclick="switchPlatform('portal')"><svg class="seg-logo seg-logo-portal" aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="#0ea5a4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M3 9h18"/><path d="M8 6.5h.01M11 6.5h.01"/><path d="M7 13h5"/><path d="M7 16.5h8"/></svg><span>سایت پرتالی</span></button>
           </div>
 
           <!-- ---- شاپفا ---- -->
@@ -930,6 +932,38 @@
             <div class="actions">
               <button class="btn btn-primary" onclick="saveWoo(this)">بررسی اتصال و ذخیره</button>
               <div id="woo-status" class="status"></div>
+            </div>
+          </div>
+
+          <!-- ---- سایت پرتالی ---- -->
+          <div id="panel-portal" class="hidden">
+            <p class="muted" style="margin-bottom:18px">اگر سایتتان با سرویس‌های پرتال‌ساز ساخته شده، با همان نام‌کاربری و رمز پنل مدیریت سایت وصل می‌شود.</p>
+            <div class="field">
+              <label for="portal_site_domain">آدرس سایت</label>
+              <input type="url" id="portal_site_domain" dir="ltr" placeholder="https://mystore.ir" />
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="portal_username">نام‌کاربری پنل سایت</label>
+                <input type="text" id="portal_username" dir="ltr" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label for="portal_password">رمز عبور</label>
+                <div class="input-wrap">
+                  <input type="password" id="portal_password" dir="ltr" autocomplete="new-password" />
+                  <button type="button" class="eye" onclick="toggleEye('portal_password', this)" aria-label="نمایش رمز">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="hint">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>
+              <span>اگر پنل سایتتان امکان ساخت کاربر با دسترسی محدود دارد، همان را بسازید و اینجا وارد کنید، نه حساب اصلی مدیریت. اطلاعات به‌صورت رمزنگاری‌شده ذخیره می‌شود.</span>
+            </div>
+            <div class="actions">
+              <button class="btn btn-primary" onclick="savePortal(this)">بررسی اتصال و ذخیره</button>
+              <div id="portal-status" class="status"></div>
             </div>
           </div>
         </div>
@@ -1708,12 +1742,15 @@
     $('shopfa_username').value = s.shopfa_username || '';
     $('woo_site_domain').value = s.woo_site_domain || '';
     $('woo_consumer_key').value = s.woo_consumer_key || '';
+    $('portal_site_domain').value = s.portal_site_domain || '';
+    $('portal_username').value = s.portal_username || '';
     const storeBadge = $('store-badge');
-    const storeConnected = !!(s.shopfa_connected || s.woo_connected);
+    const storeConnected = !!(s.shopfa_connected || s.woo_connected || s.portal_connected);
     storeBadge.textContent = storeConnected ? 'متصل' : 'متصل نیست';
     storeBadge.className = 'badge ' + (storeConnected ? 'connected' : 'disconnected');
     // پلتفرمی که واقعاً وصله رو نشون بده؛ برای کاربر تازه، پیش‌فرض شاپفاست
-    switchPlatform(s.woo_connected && !s.shopfa_connected ? 'woocommerce' : 'shopfa');
+    switchPlatform(s.shopfa_connected ? 'shopfa'
+      : (s.woo_connected ? 'woocommerce' : (s.portal_connected ? 'portal' : 'shopfa')));
 
     const side = s.widget_side || 'left';
     $('widget_side').value = side;
@@ -2034,7 +2071,8 @@
     const storeIsConnected = !!(s.shopfa_connected || s.woo_connected);
     $('ov-shopfa').textContent = storeIsConnected ? 'متصل' : 'متصل نیست';
     $('ov-shopfa-sub').textContent = storeIsConnected
-      ? (s.shopfa_connected ? 'شاپفا · ' + (s.shopfa_site_domain || '') : 'ووکامرس · ' + (s.woo_site_domain || ''))
+      ? (s.shopfa_connected ? 'شاپفا · ' + (s.shopfa_site_domain || '')
+         : (s.woo_connected ? 'ووکامرس · ' + (s.woo_site_domain || '') : 'سایت پرتالی · ' + (s.portal_site_domain || '')))
       : 'محصولات در دسترس چت‌بات نیست';
     $('ov-shopfa-ico').className = 'ico ' + (storeIsConnected ? 'g' : 'r');
     if (!kb.loaded) { $('ov-extra').textContent = '—'; $('ov-extra-sub').textContent = 'در حال دریافت…'; }
@@ -2042,7 +2080,7 @@
     const items = [
       { done: !!(s.shop_name || '').trim(), t: 'نام فروشگاه را ثبت کنید', d: 'چت‌بات با این نام خودش را معرفی می‌کند.', go: 'shop' },
       { done: rules === 3, t: 'قوانین ارسال، مرجوعی و گارانتی', d: rules ? `${fa(rules)} از ${fa(3)} مورد پر شده` : 'پرتکرارترین سوال‌های مشتری‌ها همین‌هاست.', go: 'shop' },
-      { done: !!(s.shopfa_connected || s.woo_connected), t: 'اتصال به فروشگاه', d: 'برای پاسخ درباره‌ی محصولات، قیمت و موجودی (شاپفا یا ووکامرس).', go: 'store' },
+      { done: !!(s.shopfa_connected || s.woo_connected || s.portal_connected), t: 'اتصال به فروشگاه', d: 'برای پاسخ درباره‌ی محصولات، قیمت و موجودی (شاپفا، ووکامرس یا سایت پرتالی).', go: 'store' },
       { done: !!(s.support_phone || s.support_link), t: 'راه تماس با کارشناس', d: 'برای موضوعاتی که دستیار نمی‌تواند حل کند (لغو سفارش، پرداخت…).', go: 'shop' },
       { done: (kb.stats.qa + kb.stats.text + kb.stats.file + (kb.stats.url || 0)) > 0, t: 'پر کردن پایگاه دانش', d: 'سوالات متداول، متن‌ها و فایل‌های فروشگاه (اختیاری).', go: 'knowledge' },
       { done: false, t: 'قرار دادن کد نصب در سایت', d: 'کد را کپی و قبل از </body> قرار دهید.', go: 'install', manual: true },
@@ -2128,12 +2166,13 @@
     finally { busy(btn, false); }
   }
 
-  /* ---------- انتخاب پلتفرم فروشگاهی (شاپفا / ووکامرس) ---------- */
+  /* ---------- انتخاب پلتفرم فروشگاهی (شاپفا / ووکامرس / سایت پرتالی) ---------- */
+  const STORE_PLATFORMS = ['shopfa', 'woocommerce', 'portal'];
   function switchPlatform(p) {
-    $('platform-shopfa').classList.toggle('active', p === 'shopfa');
-    $('platform-woocommerce').classList.toggle('active', p === 'woocommerce');
-    $('panel-shopfa').classList.toggle('hidden', p !== 'shopfa');
-    $('panel-woocommerce').classList.toggle('hidden', p !== 'woocommerce');
+    STORE_PLATFORMS.forEach(name => {
+      $('platform-' + name).classList.toggle('active', p === name);
+      $('panel-' + name).classList.toggle('hidden', p !== name);
+    });
   }
 
   async function saveWoo(btn) {
@@ -2147,6 +2186,20 @@
       currentShop = data.shop; $('woo_consumer_secret').value = ''; showDashboard();
       setStatus('woo-status', 'با موفقیت متصل شد.', 'success'); toast('اتصال به ووکامرس برقرار شد');
     } catch (e) { setStatus('woo-status', e.message === 'Failed to fetch' ? 'خطا در ارتباط با سرور.' : e.message, 'error'); toast('اتصال برقرار نشد', 'err'); }
+    finally { busy(btn, false); }
+  }
+
+  async function savePortal(btn) {
+    busy(btn, true); setStatus('portal-status', 'در حال بررسی اتصال به سایت...');
+    try {
+      const data = await api('/api/portal-credentials', { method: 'POST', json: {
+        portal_site_domain: $('portal_site_domain').value.trim(),
+        portal_username: $('portal_username').value.trim(),
+        portal_password: $('portal_password').value
+      } });
+      currentShop = data.shop; $('portal_password').value = ''; showDashboard();
+      setStatus('portal-status', 'با موفقیت متصل شد.', 'success'); toast('اتصال به سایت برقرار شد');
+    } catch (e) { setStatus('portal-status', e.message === 'Failed to fetch' ? 'خطا در ارتباط با سرور.' : e.message, 'error'); toast('اتصال برقرار نشد', 'err'); }
     finally { busy(btn, false); }
   }
 
@@ -2351,7 +2404,7 @@
     const note = $('products-platform-note');
     if (prod.platform === 'shopfa' || prod.platform === 'woocommerce') {
       note.classList.remove('hidden');
-      $('products-platform-note-text').textContent = `فروشگاه شما به ${prod.platform === 'shopfa' ? 'شاپفا' : 'ووکامرس'} متصل است و چت‌بات محصولات را از آنجا می‌خواند؛ محصولات این بخش فعلاً استفاده نمی‌شوند. اگر اتصال را بردارید، این فهرست فعال می‌شود.`;
+      $('products-platform-note-text').textContent = `فروشگاه شما به ${prod.platform === 'shopfa' ? 'شاپفا' : (prod.platform === 'woocommerce' ? 'ووکامرس' : 'سایت پرتالی')} متصل است و چت‌بات محصولات را از آنجا می‌خواند؛ محصولات این بخش فعلاً استفاده نمی‌شوند. اگر اتصال را بردارید، این فهرست فعال می‌شود.`;
     } else note.classList.add('hidden');
 
     const list = $('products-list');
@@ -3071,7 +3124,7 @@
             <td>${esc(s.owner_name || '—')}</td>
             <td class="adm-num" dir="ltr">${esc(fa(s.phone || '—'))}</td>
             <td>${esc(planLabel(s.plan))}</td>
-            <td>${s.shopfa_connected ? 'شاپفا' : (s.woo_connected ? 'ووکامرس' : '<span class="muted">—</span>')}</td>
+            <td>${s.shopfa_connected ? 'شاپفا' : (s.woo_connected ? 'ووکامرس' : (s.portal_connected ? 'سایت پرتالی' : '<span class="muted">—</span>'))}</td>
             <td class="adm-num">${fmtNum(s.conversations)}</td>
             <td class="adm-num">${fmtNum(s.responses_this_month)}</td>
             <td class="adm-num">${fmtNum(s.products)}</td>
@@ -3118,6 +3171,7 @@
             ${kv('آیتم‌های دانش', fmtNum(d.counts.knowledge))}
             ${kv('اتصال شاپفا', s.shopfa_connected ? s.shopfa_site_domain : 'متصل نیست')}
             ${kv('اتصال ووکامرس', s.woo_connected ? s.woo_site_domain : 'متصل نیست')}
+            ${kv('اتصال سایت پرتالی', s.portal_connected ? s.portal_site_domain : 'متصل نیست')}
             ${kv('تلفن پشتیبانی فروشگاه', s.support_phone)}
           </div>
         </div>

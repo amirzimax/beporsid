@@ -24,6 +24,7 @@ const {
   updateShopSettings,
   updateShopfaCredentials,
   updateWooCredentials,
+  updatePortalCredentials,
   logExchange,
   logCustomerMessage,
   addAgentMessage,
@@ -231,6 +232,170 @@ async function shopfaSignin(shop) {
 
   shopfaKeyCache.set(shop.id, data.private_key);
   return data.private_key;
+}
+
+// ==================== اتصال به سایت‌های پرتالی (theTba Website Builder) ====================
+// این سرویس یک API نسخه‌ی ۱ زیر مسیر /site/api/v1 دارد. محصولات عمومی‌اند (بدون احراز هویت)
+// ولی سفارش‌ها فقط با توکن در دسترس‌اند؛ توکن با نام‌کاربری و رمز از create-session گرفته
+// می‌شود و مثل شاپفا در حافظه کش می‌شود تا هر درخواست یک لاگین اضافه نزند.
+const portalTokenCache = new Map(); // shopId -> token
+
+const portalApi = (shop, path) => `${shop.portal_site_domain}/site/api/v1${path}`;
+
+async function portalSignin(shop) {
+  const res = await safeFetch(portalApi(shop, '/user/create-session'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      username: shop.portal_username,
+      password: decrypt(shop.portal_password_enc)
+    })
+  });
+
+  let data;
+  try { data = await res.json(); } catch (e) { data = null; }
+
+  if (!data || !data.success || !data.token) {
+    throw new Error('ورود به سایت پرتالی ناموفق بود: ' + ((data && data.description) || 'نامشخص'));
+  }
+
+  portalTokenCache.set(shop.id, data.token);
+  return data.token;
+}
+
+// آدرس‌های تصویر و صفحه‌ی محصول در این API نسبی‌اند (مثل /uploads/products/x.jpg)
+function portalAbsUrl(shop, relative) {
+  if (!relative) return null;
+  if (/^https?:\/\//i.test(relative)) return relative;
+  return shop.portal_site_domain + (relative.startsWith('/') ? relative : '/' + relative);
+}
+
+// جست‌وجوی محصولات سایت پرتالی. از اندپوینت عمومی فروشگاه استفاده می‌کنیم چون هم
+// نیازی به توکن ندارد و هم فقط محصولات منتشرشده را برمی‌گرداند (همان چیزی که مشتری می‌بیند).
+async function searchPortalProducts(shop, query) {
+  if (!shop.portal_site_domain || !shop.portal_username || !shop.portal_password_enc) {
+    return { error: 'اتصال به سایت پرتالی هنوز در پنل تنظیم نشده است.' };
+  }
+
+  const params = new URLSearchParams({ page: '1', size: '20', q: query });
+  let res, data;
+  try {
+    res = await safeFetch(portalApi(shop, '/store/products') + '?' + params.toString());
+    data = await res.json();
+  } catch (e) {
+    console.error('خطای API پرتال (محصولات):', e.message);
+    return { error: 'خطا در ارتباط با فروشگاه.' };
+  }
+
+  if (!res.ok || data.success === false) {
+    console.error('خطای API پرتال (محصولات):', res.status);
+    return { error: 'خطا در ارتباط با فروشگاه.' };
+  }
+
+  const rawItems = (data.products || []).map(p => ({
+    title: p.title,
+    price: p.price,
+    // compare_price قیمت قبل از تخفیف است؛ فقط وقتی واقعاً بیشتر از قیمت فعلی باشد معنی دارد
+    old_price: (p.compare_price != null && p.price != null && p.compare_price > p.price) ? p.compare_price : null,
+    // stock ممکن است null باشد یعنی موجودی شمارش نمی‌شود؛ در آن حالت به available تکیه می‌کنیم
+    quantity: p.available === false ? 0 : (p.stock == null ? null : p.stock),
+    thumb: portalAbsUrl(shop, p.image),
+    link: portalAbsUrl(shop, p.url)
+  }));
+
+  const ranked = rankByRelevance(rawItems, query);
+  const inStock = ranked.filter(p => p.quantity === undefined || p.quantity === null || p.quantity > 0);
+  const hiddenOutOfStock = ranked.length - inStock.length;
+  const items = inStock.slice(0, 8);
+
+  return {
+    items,
+    total_count: Math.max(data.total || 0, items.length),
+    hidden_out_of_stock: hiddenOutOfStock,
+    searchLink: `${shop.portal_site_domain}/site/search?q=${encodeURIComponent(query)}`,
+    searchQuery: query
+  };
+}
+
+// وضعیت سفارش در این API یک آرایه‌ی برچسب انگلیسی است؛ به جمله‌ی فارسی قابل‌فهم ترجمه می‌شود
+const PORTAL_STATUS_FA = {
+  unfulfilled: 'در انتظار پردازش',
+  fulfilled: 'انجام‌شده',
+  paid: 'پرداخت‌شده',
+  unpaid: 'پرداخت‌نشده',
+  canceled: 'لغو شده',
+  cancelled: 'لغو شده',
+  returned: 'مرجوع شده',
+  shipping_required: 'نیازمند ارسال',
+  downloadable: 'دانلودی',
+  cash_on_delivery: 'پرداخت در محل'
+};
+
+function portalStatusText(status) {
+  const list = Array.isArray(status) ? status : (status ? [status] : []);
+  const fa = list.map(s => PORTAL_STATUS_FA[s]).filter(Boolean);
+  return fa.length ? fa.join('، ') : 'نامشخص';
+}
+
+// پیگیری سفارش سایت پرتالی. اگر کد عددی باشد اول مستقیم همان سفارش را می‌گیریم؛ وگرنه
+// (و در صورت پیدا نشدن) با جست‌وجوی keywords می‌گردیم.
+async function trackPortalOrder(shop, orderCode, isRetry = false) {
+  if (!shop.portal_site_domain || !shop.portal_username || !shop.portal_password_enc) {
+    return { error: 'اتصال به سایت پرتالی هنوز در پنل تنظیم نشده است.' };
+  }
+  if (!orderCode) return { error: 'کد سفارش لازم است.' };
+
+  let token = portalTokenCache.get(shop.id);
+  if (!token) token = await portalSignin(shop);
+
+  const code = String(orderCode).trim();
+  const auth = { Authorization: `Bearer ${token}` };
+
+  let res, data;
+  try {
+    if (/^\d+$/.test(code)) {
+      res = await safeFetch(portalApi(shop, '/manage/store/orders/' + encodeURIComponent(code)), { headers: auth });
+      data = await res.json().catch(() => null);
+    }
+    // یا کد عددی نبود، یا سفارشی با آن شناسه پیدا نشد → جست‌وجو با keywords
+    if (!data || !data.order) {
+      const qs = new URLSearchParams({ page: '1', size: '10', keywords: code });
+      res = await safeFetch(portalApi(shop, '/manage/store/orders') + '?' + qs.toString(), { headers: auth });
+      data = await res.json().catch(() => null);
+    }
+  } catch (e) {
+    console.error('خطای API پرتال (سفارش):', e.message);
+    return { error: 'خطا در ارتباط با فروشگاه.' };
+  }
+
+  // توکن منقضی شده: یک بار دیگر لاگین و تلاش مجدد
+  if ((res.status === 401 || res.status === 403) && !isRetry) {
+    portalTokenCache.delete(shop.id);
+    await portalSignin(shop);
+    return trackPortalOrder(shop, orderCode, true);
+  }
+
+  if (!res.ok || !data || data.success === false) {
+    console.error('خطای API پرتال (سفارش):', res.status);
+    return { error: 'خطا در ارتباط با فروشگاه.' };
+  }
+
+  const order = data.order || (data.orders || []).find(o => String(o.id) === code) || (data.orders || [])[0];
+  if (!order) {
+    return { found: false, message: 'سفارشی با این کد پیدا نشد. لطفاً کد سفارش را دوباره بررسی کنید.' };
+  }
+
+  // کد رهگیری پستی در اولین مرسوله‌ی ثبت‌شده است
+  const shipment = (order.shipments || [])[0] || null;
+
+  return {
+    found: true,
+    order_code: order.id,
+    status: portalStatusText(order.status),
+    tracking_code: shipment && shipment.reference ? String(shipment.reference) : null,
+    items_count: Array.isArray(order.items) ? order.items.length : (order.quantity || 0),
+    sum_price: order.price
+  };
 }
 
 // بررسی اینکه آیا صفحه‌ی محصول واقعاً روی سایت وجود داره یا نه (برای فیلتر کردن لینک‌های خراب)
@@ -641,6 +806,7 @@ async function trackWooOrder(shop, orderCode) {
 function getCommercePlatform(shop) {
   if (shop.shopfa_site_domain && shop.shopfa_username && shop.shopfa_password_enc) return 'shopfa';
   if (shop.woo_site_domain && shop.woo_consumer_key && shop.woo_consumer_secret_enc) return 'woocommerce';
+  if (shop.portal_site_domain && shop.portal_username && shop.portal_password_enc) return 'portal';
   if (products.countProducts(shop.id) > 0) return 'manual';
   return null;
 }
@@ -674,6 +840,7 @@ async function searchProducts(shop, query) {
   const platform = getCommercePlatform(shop);
   if (platform === 'woocommerce') return searchWooProducts(shop, query);
   if (platform === 'shopfa') return searchShopfaProducts(shop, query);
+  if (platform === 'portal') return searchPortalProducts(shop, query);
   if (platform === 'manual') return searchManualProducts(shop, query);
   return { error: 'اتصال به فروشگاه هنوز در پنل تنظیم نشده است.' };
 }
@@ -682,7 +849,8 @@ async function trackOrder(shop, orderCode) {
   const platform = getCommercePlatform(shop);
   if (platform === 'woocommerce') return trackWooOrder(shop, orderCode);
   if (platform === 'shopfa') return trackShopfaOrder(shop, orderCode);
-  if (platform === 'manual') return { error: 'پیگیری سفارش فقط با اتصال به شاپفا یا ووکامرس ممکن است. مشتری را به پشتیبانی راهنمایی کن.' };
+  if (platform === 'portal') return trackPortalOrder(shop, orderCode);
+  if (platform === 'manual') return { error: 'پیگیری سفارش فقط با اتصال به فروشگاه (شاپفا، ووکامرس یا سایت پرتالی) ممکن است. مشتری را به پشتیبانی راهنمایی کن.' };
   return { error: 'اتصال به فروشگاه هنوز در پنل تنظیم نشده است.' };
 }
 
@@ -1211,6 +1379,55 @@ app.post('/api/woocommerce-credentials', requireAuth, async (req, res) => {
     woo_consumer_key: consumerKey,
     woo_consumer_secret: consumerSecret
   });
+
+  res.json({ shop: publicShop(updated) });
+});
+
+app.post('/api/portal-credentials', requireAuth, async (req, res) => {
+  const { portal_site_domain, portal_username, portal_password } = req.body;
+  if (!portal_site_domain || !portal_username || !portal_password) {
+    return res.status(400).json({ error: 'آدرس سایت، نام‌کاربری و رمزعبور الزامی است.' });
+  }
+
+  const base = String(portal_site_domain).trim().replace(/\/$/, '');
+  if (!/^https?:\/\//i.test(base)) {
+    return res.status(400).json({ error: 'آدرس سایت باید با http:// یا https:// شروع شود.' });
+  }
+  try { await assertPublicUrl(base); }
+  catch (e) { return res.status(400).json({ error: e.message }); }
+
+  // قبل از ذخیره، اتصال را تست می‌کنیم: اول اینکه واقعاً یک سایت پرتالی است (اندپوینت config)
+  // و بعد اینکه نام‌کاربری و رمز درست است (create-session).
+  try {
+    const cfgRes = await safeFetch(`${base}/site/api/v1/config`);
+    const cfg = await cfgRes.json().catch(() => null);
+    if (!cfgRes.ok || !cfg || cfg.success !== true) {
+      return res.status(400).json({ error: 'این آدرس یک سایت پرتالی معتبر نیست یا API آن در دسترس نیست.' });
+    }
+  } catch (e) {
+    return res.status(400).json({ error: 'امکان اتصال به آدرس سایت داده‌شده وجود نداشت.' });
+  }
+
+  try {
+    const loginRes = await safeFetch(`${base}/site/api/v1/user/create-session`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: portal_username, password: portal_password })
+    });
+    const login = await loginRes.json().catch(() => null);
+    if (!loginRes.ok || !login || !login.success || !login.token) {
+      return res.status(400).json({ error: 'ورود ناموفق بود. نام‌کاربری یا رمزعبور را بررسی کنید.' });
+    }
+  } catch (e) {
+    return res.status(400).json({ error: 'امکان ورود به سایت داده‌شده وجود نداشت.' });
+  }
+
+  const updated = updatePortalCredentials(req.shop.id, {
+    portal_site_domain: base,
+    portal_username: String(portal_username).trim(),
+    portal_password
+  });
+  portalTokenCache.delete(req.shop.id); // اطلاعات عوض شده، توکن قبلی را دور می‌ریزیم
 
   res.json({ shop: publicShop(updated) });
 });

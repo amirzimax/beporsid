@@ -28,6 +28,10 @@ db.exec(`
     woo_consumer_key TEXT,
     woo_consumer_secret_enc TEXT,
 
+    portal_site_domain TEXT,
+    portal_username TEXT,
+    portal_password_enc TEXT,
+
     extra_info TEXT DEFAULT '',
 
     widget_side TEXT DEFAULT 'left',
@@ -79,6 +83,9 @@ const migrations = {
   woo_site_domain: "ALTER TABLE shops ADD COLUMN woo_site_domain TEXT",
   woo_consumer_key: "ALTER TABLE shops ADD COLUMN woo_consumer_key TEXT",
   woo_consumer_secret_enc: "ALTER TABLE shops ADD COLUMN woo_consumer_secret_enc TEXT",
+  portal_site_domain: "ALTER TABLE shops ADD COLUMN portal_site_domain TEXT",
+  portal_username: "ALTER TABLE shops ADD COLUMN portal_username TEXT",
+  portal_password_enc: "ALTER TABLE shops ADD COLUMN portal_password_enc TEXT",
   plan: "ALTER TABLE shops ADD COLUMN plan TEXT DEFAULT 'trial'",
   plan_expires_at: "ALTER TABLE shops ADD COLUMN plan_expires_at TEXT",
   telegram_bot_token_enc: "ALTER TABLE shops ADD COLUMN telegram_bot_token_enc TEXT",
@@ -335,6 +342,25 @@ function updateShopfaCredentials(id, { shopfa_site_domain, shopfa_username, shop
   `).run(
     shopfa_site_domain ?? null,
     shopfa_username ?? null,
+    encPassword,
+    id
+  );
+  return getShopById(id);
+}
+
+// سایت‌های پرتالی (theTba Website Builder): مثل شاپفا با نام‌کاربری و رمز وارد می‌شویم و
+// سرویس یک توکن می‌دهد؛ پس رمز را رمزنگاری‌شده نگه می‌داریم تا بتوانیم توکن را تازه کنیم.
+function updatePortalCredentials(id, { portal_site_domain, portal_username, portal_password }) {
+  const encPassword = portal_password ? encrypt(portal_password) : null;
+  db.prepare(`
+    UPDATE shops SET
+      portal_site_domain = COALESCE(?, portal_site_domain),
+      portal_username = COALESCE(?, portal_username),
+      portal_password_enc = COALESCE(?, portal_password_enc)
+    WHERE id = ?
+  `).run(
+    portal_site_domain ?? null,
+    portal_username ?? null,
     encPassword,
     id
   );
@@ -878,6 +904,9 @@ function adminShopView(s) {
     woo_site_domain: s.woo_site_domain || null,
     woo_consumer_key: s.woo_consumer_key || null,
     woo_connected: !!(s.woo_site_domain && s.woo_consumer_key && s.woo_consumer_secret_enc),
+    portal_site_domain: s.portal_site_domain || null,
+    portal_username: s.portal_username || null,
+    portal_connected: !!(s.portal_site_domain && s.portal_username && s.portal_password_enc),
     support_phone: s.support_phone || '',
     support_link: s.support_link || '',
     support_hours: s.support_hours || ''
@@ -897,7 +926,8 @@ function getAdminOverview() {
   const connected = db.prepare(`
     SELECT
       SUM(CASE WHEN shopfa_site_domain IS NOT NULL AND shopfa_password_enc IS NOT NULL THEN 1 ELSE 0 END) AS shopfa,
-      SUM(CASE WHEN woo_site_domain IS NOT NULL AND woo_consumer_secret_enc IS NOT NULL THEN 1 ELSE 0 END) AS woo
+      SUM(CASE WHEN woo_site_domain IS NOT NULL AND woo_consumer_secret_enc IS NOT NULL THEN 1 ELSE 0 END) AS woo,
+      SUM(CASE WHEN portal_site_domain IS NOT NULL AND portal_password_enc IS NOT NULL THEN 1 ELSE 0 END) AS portal
     FROM shops
   `).get();
 
@@ -933,7 +963,7 @@ function getAdminOverview() {
 
   return {
     shops: { total: shops.total || 0, today: shops.today || 0, week: shops.week || 0, month: shops.month || 0, active_30d: active.n || 0 },
-    connected: { shopfa: connected.shopfa || 0, woo: connected.woo || 0 },
+    connected: { shopfa: connected.shopfa || 0, woo: connected.woo || 0, portal: connected.portal || 0 },
     plans: plans.reduce((acc, r) => { acc[r.plan || 'trial'] = r.n; return acc; }, {}),
     activity: {
       conversations: activity.conversations || 0,
@@ -955,6 +985,7 @@ function listAllShops({ q = '', limit = 50, offset = 0 } = {}) {
     SELECT s.id, s.shop_name, s.owner_name, s.phone, s.plan, s.plan_expires_at, s.created_at,
       (s.shopfa_site_domain IS NOT NULL AND s.shopfa_password_enc IS NOT NULL) AS shopfa_connected,
       (s.woo_site_domain IS NOT NULL AND s.woo_consumer_secret_enc IS NOT NULL) AS woo_connected,
+      (s.portal_site_domain IS NOT NULL AND s.portal_password_enc IS NOT NULL) AS portal_connected,
       (SELECT COUNT(*) FROM conversations c WHERE c.shop_id = s.id) AS conversations,
       (SELECT MAX(c.last_message_at) FROM conversations c WHERE c.shop_id = s.id) AS last_activity,
       (SELECT COUNT(*) FROM messages m JOIN conversations c ON c.id = m.conversation_id
@@ -1063,6 +1094,9 @@ function toPublicShop(shop) {
     woo_site_domain: shop.woo_site_domain,
     woo_consumer_key: shop.woo_consumer_key,
     woo_connected: !!(shop.woo_site_domain && shop.woo_consumer_key && shop.woo_consumer_secret_enc),
+    portal_site_domain: shop.portal_site_domain,
+    portal_username: shop.portal_username,
+    portal_connected: !!(shop.portal_site_domain && shop.portal_username && shop.portal_password_enc),
     // فقط وضعیت و نام کاربری ربات به فرانت می‌رود؛ توکن ربات هیچ‌وقت از سرور خارج نمی‌شود
     telegram_connected: !!shop.telegram_bot_token_enc,
     telegram_bot_username: shop.telegram_bot_username || null,
@@ -1080,6 +1114,7 @@ module.exports = {
   updateShopSettings,
   updateShopfaCredentials,
   updateWooCredentials,
+  updatePortalCredentials,
   updateExtraInfo,
   logExchange,
   logCustomerMessage,
