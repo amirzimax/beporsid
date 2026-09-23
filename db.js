@@ -153,6 +153,8 @@ db.exec(`
   const convColumns = db.prepare('PRAGMA table_info(conversations)').all().map(c => c.name);
   if (!convColumns.includes('needs_agent')) db.exec('ALTER TABLE conversations ADD COLUMN needs_agent INTEGER DEFAULT 0');
   if (!convColumns.includes('handled_at')) db.exec('ALTER TABLE conversations ADD COLUMN handled_at TEXT');
+  // تا این زمان، کارشناس گفتگو را در دست دارد و دستیار هوش مصنوعی در این مکالمه ساکت می‌ماند
+  if (!convColumns.includes('agent_until')) db.exec('ALTER TABLE conversations ADD COLUMN agent_until TEXT');
 }
 
 // گفتگوهای تلگرام: هر ردیف یعنی یک مشتری که با ربات تلگرامِ یک فروشگاه حرف می‌زند.
@@ -174,6 +176,7 @@ db.exec(`
 
 // نگاشت «پیام نوتیفیکیشنی که به فروشنده فرستادیم» به «مشتریِ مربوط به آن».
 // وقتی فروشنده روی آن پیام Reply بزند، از اینجا می‌فهمیم جوابش برای کدام مشتری است.
+// مشتری می‌تواند در تلگرام باشد (customer_chat_id) یا در ویجت سایت (conversation_id).
 db.exec(`
   CREATE TABLE IF NOT EXISTS telegram_notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -184,6 +187,13 @@ db.exec(`
     UNIQUE(shop_id, owner_message_id)
   );
 `);
+{
+  const notifColumns = db.prepare('PRAGMA table_info(telegram_notifications)').all().map(c => c.name);
+  // برای مشتری‌های ویجت سایت، customer_chat_id خالی ('') می‌ماند و این ستون پر می‌شود
+  if (!notifColumns.includes('conversation_id')) {
+    db.exec('ALTER TABLE telegram_notifications ADD COLUMN conversation_id INTEGER');
+  }
+}
 
 // تیکت‌های پشتیبانی: هر تیکت یک گفتگوی جدا بین صاحب فروشگاه و مدیر سامانه است.
 // status: open (منتظر پاسخ ما) | answered (پاسخ دادیم) | closed (بسته شده)
@@ -445,6 +455,81 @@ const logExchange = db.transaction((shopId, sessionId, pageUrl, userText, botTex
   }
   return conv.id;
 });
+
+// ثبت پیام تنهای مشتری (بدون جواب دستیار) - وقتی کارشناس گفتگو را در دست دارد و
+// دستیار ساکت است، پیام مشتری باید ثبت شود تا کارشناس آن را در پنل و تلگرام ببیند.
+const logCustomerMessage = db.transaction((shopId, sessionId, pageUrl, userText) => {
+  db.prepare(`
+    INSERT INTO conversations (shop_id, session_id, page_url, preview)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(shop_id, session_id) DO NOTHING
+  `).run(shopId, sessionId, pageUrl || null, userText.slice(0, 120));
+
+  const conv = db.prepare('SELECT id FROM conversations WHERE shop_id = ? AND session_id = ?').get(shopId, sessionId);
+  db.prepare('INSERT INTO messages (conversation_id, role, content, products_json) VALUES (?, ?, ?, NULL)')
+    .run(conv.id, 'user', userText);
+  // پیام تازه‌ی مشتری یعنی گفتگو دوباره منتظر جواب کارشناس است
+  db.prepare(`
+    UPDATE conversations SET message_count = message_count + 1, last_message_at = datetime('now'),
+      needs_agent = 1, handled_at = NULL
+    WHERE id = ?
+  `).run(conv.id);
+  return conv.id;
+});
+
+// پاسخ کارشناس انسانی به مشتریِ ویجت سایت. نقش 'agent' عمداً از 'assistant' جداست تا
+// در سقف پاسخ ماهانه‌ی پلن (که فقط پاسخ‌های هوش مصنوعی را می‌شمارد) حساب نشود.
+const addAgentMessage = db.transaction((shopId, conversationId, text, minutes) => {
+  const conv = db.prepare('SELECT id, session_id FROM conversations WHERE id = ? AND shop_id = ?')
+    .get(conversationId, shopId);
+  if (!conv) return null;
+
+  const info = db.prepare('INSERT INTO messages (conversation_id, role, content, products_json) VALUES (?, ?, ?, NULL)')
+    .run(conv.id, 'agent', text);
+  db.prepare(`
+    UPDATE conversations SET message_count = message_count + 1, last_message_at = datetime('now'),
+      handled_at = datetime('now'), agent_until = datetime('now', ?)
+    WHERE id = ?
+  `).run(`+${Math.max(1, Math.min(1440, minutes || 30))} minutes`, conv.id);
+
+  return db.prepare('SELECT id, role, content, created_at FROM messages WHERE id = ?').get(info.lastInsertRowid);
+});
+
+// آیا کارشناس همین حالا این گفتگوی سایت را در دست دارد؟ (دستیار باید ساکت بماند)
+function isAgentActive(shopId, sessionId) {
+  const row = db.prepare(`
+    SELECT 1 AS active FROM conversations
+    WHERE shop_id = ? AND session_id = ? AND agent_until IS NOT NULL AND agent_until > datetime('now')
+  `).get(shopId, sessionId);
+  return !!row;
+}
+
+// برگرداندن گفتگو به دستیار، قبل از تمام شدن مهلت
+function endAgentSession(shopId, conversationId) {
+  const r = db.prepare('UPDATE conversations SET agent_until = NULL WHERE id = ? AND shop_id = ?')
+    .run(conversationId, shopId);
+  return r.changes > 0;
+}
+
+// پیام‌های تازه‌ی کارشناس برای ویجت مشتری (widget هر چند ثانیه این را می‌پرسد)
+function getAgentMessagesAfter(shopId, sessionId, afterId) {
+  const conv = db.prepare('SELECT id, agent_until FROM conversations WHERE shop_id = ? AND session_id = ?')
+    .get(shopId, sessionId);
+  if (!conv) return { items: [], agentActive: false };
+  const items = db.prepare(`
+    SELECT id, content, created_at FROM messages
+    WHERE conversation_id = ? AND role = 'agent' AND id > ?
+    ORDER BY id LIMIT 20
+  `).all(conv.id, Number(afterId) || 0);
+  const agentActive = !!db.prepare(`
+    SELECT 1 AS a FROM conversations WHERE id = ? AND agent_until IS NOT NULL AND agent_until > datetime('now')
+  `).get(conv.id);
+  return { items, agentActive };
+}
+
+function getConversationBySession(shopId, sessionId) {
+  return db.prepare('SELECT * FROM conversations WHERE shop_id = ? AND session_id = ?').get(shopId, sessionId) || null;
+}
 
 // «رسیدگی کردم» - چه با دکمه‌ی پنل، چه وقتی فروشنده در تلگرام جواب مشتری را داده
 function markConversationHandled(shopId, conversationId) {
@@ -749,12 +834,15 @@ function isTelegramHandoffActive(shopId, chatId) {
   return !!row;
 }
 
-function saveTelegramNotification(shopId, ownerMessageId, customerChatId) {
+// customerChatId برای مشتری تلگرامی، conversationId برای مشتریِ ویجت سایت. یکی از این دو پر است.
+function saveTelegramNotification(shopId, ownerMessageId, customerChatId, conversationId) {
   db.prepare(`
-    INSERT INTO telegram_notifications (shop_id, owner_message_id, customer_chat_id)
-    VALUES (?, ?, ?)
-    ON CONFLICT(shop_id, owner_message_id) DO UPDATE SET customer_chat_id = excluded.customer_chat_id
-  `).run(shopId, String(ownerMessageId), String(customerChatId));
+    INSERT INTO telegram_notifications (shop_id, owner_message_id, customer_chat_id, conversation_id)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(shop_id, owner_message_id) DO UPDATE SET
+      customer_chat_id = excluded.customer_chat_id,
+      conversation_id = excluded.conversation_id
+  `).run(shopId, String(ownerMessageId), String(customerChatId || ''), conversationId || null);
 }
 
 function getTelegramNotification(shopId, ownerMessageId) {
@@ -994,6 +1082,12 @@ module.exports = {
   updateWooCredentials,
   updateExtraInfo,
   logExchange,
+  logCustomerMessage,
+  addAgentMessage,
+  isAgentActive,
+  endAgentSession,
+  getAgentMessagesAfter,
+  getConversationBySession,
   listConversations,
   markConversationHandled,
   markSessionHandled,

@@ -380,7 +380,21 @@
   .msg { max-width: 78%; padding: 10px 14px; border-radius: 16px; font-size: 14px; line-height: 1.75; white-space: pre-wrap; word-break: break-word; }
   .msg.user { align-self: flex-start; background: var(--firooze); color: #fff; border-bottom-right-radius: 5px; }
   .msg.assistant { align-self: flex-end; background: var(--card); color: var(--ink); border: 1px solid var(--line-soft); border-bottom-left-radius: 5px; }
+  /* پاسخ کارشناس انسانی: از جواب هوش مصنوعی متمایز است تا در مرور گفتگو گم نشود */
+  .msg.agent { align-self: flex-end; background: var(--firooze-mist); color: var(--ink); border: 1px solid var(--firooze-soft); border-bottom-left-radius: 5px; }
+  .msg .msg-who { display: block; font-size: 11px; font-weight: 700; color: var(--firooze-deep); margin-bottom: 3px; }
   .msg .ts { display: block; font-size: 10.5px; opacity: .65; margin-top: 4px; }
+
+  /* کادر پاسخ کارشناس، پایین گفتگو */
+  .reply-box { display: flex; align-items: flex-end; gap: 8px; padding: 12px 18px 6px; border-top: 1px solid var(--line); background: var(--card); }
+  .reply-box textarea {
+    flex: 1; resize: none; font-family: inherit; font-size: 14px; line-height: 1.7;
+    padding: 10px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg);
+    color: var(--ink); max-height: 120px; overflow-y: auto;
+  }
+  .reply-box textarea:focus { outline: none; border-color: var(--firooze); }
+  .reply-box .btn { flex: none; padding: 10px 14px; border-radius: 12px; }
+  .reply-hint { padding: 0 18px 12px; font-size: 11.5px; color: var(--ink-faint); background: var(--card); }
   .msg-products { align-self: flex-end; max-width: 78%; display: grid; gap: 6px; }
   .msg-product { display: flex; align-items: center; gap: 10px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; text-decoration: none; color: var(--ink); font-size: 12.5px; }
   .msg-product img { width: 40px; height: 40px; border-radius: 7px; object-fit: cover; background: var(--line-soft); flex: none; }
@@ -1857,7 +1871,9 @@
               <span><span style="display:block">${esc(p.title || '')}</span><span class="pp">${p.price ? fa(Number(p.price).toLocaleString('en')) + ' تومان' : ''}</span></span>
             </a>`).join('') + `</div>`;
         }
-        return sep + `<div class="msg ${m.role === 'user' ? 'user' : 'assistant'}">${esc(m.content)}<span class="ts">${esc(t)}</span></div>` + prods;
+        const cls = m.role === 'user' ? 'user' : (m.role === 'agent' ? 'agent' : 'assistant');
+        const who = m.role === 'agent' ? '<span class="msg-who">کارشناس</span>' : '';
+        return sep + `<div class="msg ${cls}">${who}${esc(m.content)}<span class="ts">${esc(t)}</span></div>` + prods;
       }).join('');
       view.innerHTML = `
         <div class="view-head">
@@ -1874,12 +1890,107 @@
             <button class="btn btn-danger" style="padding:6px 12px;font-size:12.5px" onclick="removeConversation(${c.id})">حذف</button>
           </div>
         </div>
-        ${isPending(c) ? '<div class="view-note">دستیار در این گفتگو مشتری را به کارشناس ارجاع داده است. بعد از پیگیری، «رسیدگی کردم» را بزنید.</div>' : ''}
-        <div class="view-body" id="view-body">${body}</div>`;
+        ${isPending(c) ? '<div class="view-note">دستیار این مشتری را به کارشناس ارجاع داده است. می‌توانید همین‌جا جواب بدهید؛ پیام شما همان لحظه در ویجت سایت به مشتری نشان داده می‌شود.</div>' : ''}
+        <div class="view-body" id="view-body">${body}</div>
+        <div class="reply-box">
+          <textarea id="agent-reply" rows="1" placeholder="پاسخ خود را بنویسید… (Enter برای ارسال)"></textarea>
+          <button class="btn btn-primary" id="agent-send" onclick="sendAgentReply(${c.id})" aria-label="ارسال">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </div>
+        <div class="reply-hint">تا ۳۰ دقیقه بعد از پاسخ شما، دستیار در این گفتگو ساکت می‌ماند تا حرفتان قطع نشود.</div>`;
       const vb = $('view-body'); vb.scrollTop = vb.scrollHeight;
+      startConvPolling();
+      const ta = $('agent-reply');
+      if (ta) {
+        ta.addEventListener('keydown', e => {
+          if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAgentReply(c.id); }
+        });
+        // ارتفاع کادر با متن بالا می‌رود تا پیام بلند هم کامل دیده شود
+        ta.addEventListener('input', () => {
+          ta.style.height = 'auto';
+          ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+        });
+      }
     } catch (e) {
       view.innerHTML = `<div class="view-empty"><span class="error">${esc(e.message)}</span></div>`;
     }
+  }
+
+  // پاسخ کارشناس: پیام مستقیم به مشتریِ ویجت سایت
+  async function sendAgentReply(id) {
+    const ta = $('agent-reply');
+    const btn = $('agent-send');
+    if (!ta) return;
+    const text = ta.value.trim();
+    if (!text) return;
+
+    busy(btn, true);
+    try {
+      const data = await api(`/api/conversations/${id}/reply`, {
+        method: 'POST',
+        body: JSON.stringify({ text })
+      });
+      ta.value = ''; ta.style.height = 'auto';
+      appendAgentMessage(data.message);
+      setPendingBadge(data.pending || 0);
+      // گفتگو با پاسخ دادن، رسیدگی‌شده حساب می‌شود و از تب «در حال انتظار» بیرون می‌رود
+      const it = convState.items.find(c => c.id === id);
+      if (it) { it.handled_at = new Date().toISOString(); }
+      if (convState.filter === 'pending') {
+        convState.items = convState.items.filter(c => c.id !== id);
+        convState.total = Math.max(0, convState.total - 1);
+        renderConvList();
+      }
+    } catch (e) {
+      toast(errMsg(e), 'err');
+    } finally {
+      busy(btn, false);
+      ta.focus();
+    }
+  }
+
+  function appendAgentMessage(m) {
+    const vb = $('view-body');
+    if (!vb || !m) return;
+    const t = new Date(m.created_at.replace(' ', 'T') + 'Z').toLocaleTimeString('fa-IR', { hour: '2-digit', minute: '2-digit' });
+    const el = document.createElement('div');
+    el.className = 'msg agent';
+    el.innerHTML = `<span class="msg-who">کارشناس</span>${esc(m.content)}<span class="ts">${esc(t)}</span>`;
+    vb.appendChild(el);
+    vb.scrollTop = vb.scrollHeight;
+  }
+
+  // وقتی گفتگویی باز است، هر چند ثانیه پیام‌های تازه‌ی مشتری را می‌گیریم تا گفتگوی
+  // زنده واقعاً زنده باشد و کارشناس مجبور نشود صفحه را رفرش کند.
+  const CONV_POLL_MS = 8000;
+  let convPollTimer = null;
+
+  function startConvPolling() {
+    stopConvPolling();
+    convPollTimer = setInterval(async () => {
+      const id = convState.activeId;
+      if (!id || document.hidden) return;
+      // اگر کاربر در حال نوشتن است، بازسازی کامل نما حواسش را پرت می‌کند
+      const ta = $('agent-reply');
+      const draft = ta ? ta.value : '';
+      const vb = $('view-body');
+      const wasAtBottom = vb ? (vb.scrollHeight - vb.scrollTop - vb.clientHeight < 40) : true;
+      try {
+        const { conversation: c } = await api('/api/conversations/' + id);
+        const shown = $('view-body') ? $('view-body').querySelectorAll('.msg').length : 0;
+        if (c.messages.length !== shown) {
+          await openConversation(id);
+          const ta2 = $('agent-reply');
+          if (ta2 && draft) { ta2.value = draft; }
+          if (!wasAtBottom) { /* اگر بالا را می‌خواند، پایین نمی‌پریم */ }
+        }
+      } catch (e) { /* قطعی موقت مهم نیست */ }
+    }, CONV_POLL_MS);
+  }
+
+  function stopConvPolling() {
+    if (convPollTimer) { clearInterval(convPollTimer); convPollTimer = null; }
   }
 
   async function setConversationHandled(id, handled) {
@@ -1902,6 +2013,7 @@
   function closeConversation() {
     $('inbox').classList.remove('show-view');
     convState.activeId = null; renderConvList();
+    stopConvPolling();
   }
 
   async function removeConversation(id) {

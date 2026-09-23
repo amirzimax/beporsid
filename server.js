@@ -25,6 +25,12 @@ const {
   updateShopfaCredentials,
   updateWooCredentials,
   logExchange,
+  logCustomerMessage,
+  addAgentMessage,
+  isAgentActive,
+  endAgentSession,
+  getAgentMessagesAfter,
+  getConversationBySession,
   listConversations,
   markConversationHandled,
   markSessionHandled,
@@ -1518,6 +1524,28 @@ app.get('/api/conversations', requireAuth, (req, res) => {
   res.json(listConversations(req.shop.id, { q, limit, offset, filter }));
 });
 
+// پاسخ مستقیم کارشناس به مشتریِ ویجت سایت، از داخل پنل.
+// بعد از این، دستیار هوش مصنوعی تا AGENT_HANDOFF_MINUTES دقیقه در این گفتگو ساکت می‌ماند
+// تا وسط حرف کارشناس نپرد؛ ویجت مشتری این پیام را با poll کوتاه دریافت می‌کند.
+app.post('/api/conversations/:id/reply', requireAuth, (req, res) => {
+  const text = typeof req.body.text === 'string' ? req.body.text.trim() : '';
+  if (!text) return res.status(400).json({ error: 'متن پیام خالی است.' });
+  if (text.length > 4000) return res.status(400).json({ error: 'متن پیام طولانی‌تر از حد مجاز است.' });
+
+  const msg = addAgentMessage(req.shop.id, Number(req.params.id), text.slice(0, 4000), AGENT_HANDOFF_MINUTES);
+  if (!msg) return res.status(404).json({ error: 'گفتگو پیدا نشد.' });
+
+  res.json({ ok: true, message: msg, pending: countPendingConversations(req.shop.id) });
+});
+
+// برگرداندن گفتگو به دستیار، قبل از پایان مهلت
+app.post('/api/conversations/:id/release', requireAuth, (req, res) => {
+  if (!endAgentSession(req.shop.id, Number(req.params.id))) {
+    return res.status(404).json({ error: 'گفتگو پیدا نشد.' });
+  }
+  res.json({ ok: true });
+});
+
 // «رسیدگی کردم» - گفتگو از تب در حال انتظار خارج می‌شود
 app.post('/api/conversations/:id/handled', requireAuth, (req, res) => {
   if (!markConversationHandled(req.shop.id, Number(req.params.id))) {
@@ -1590,6 +1618,10 @@ app.post('/api/tickets/:id/close', requireAuth, (req, res) => {
 // بعد از جواب دستی فروشنده، ربات این‌قدر دقیقه برای همان مشتری ساکت می‌ماند تا گفتگو
 // دست خودش باشد و مشتری دو جواب موازی نگیرد.
 const TELEGRAM_HANDOFF_MINUTES = 30;
+
+// همین قاعده برای گفتگوی ویجت سایت: بعد از پاسخ کارشناس (از پنل یا از تلگرام)، دستیار
+// این‌قدر دقیقه در آن گفتگو ساکت می‌ماند تا مشتری دو جواب موازی نگیرد.
+const AGENT_HANDOFF_MINUTES = 30;
 
 function telegramWebhookUrl(secret) {
   return `${PUBLIC_BASE_URL}/telegram/webhook/${secret}`;
@@ -1696,8 +1728,18 @@ async function handleTelegramUpdate(shop, update) {
   // دکمه‌ی «برگرداندن به ربات» زیر پیام نوتیفیکیشن
   if (update.callback_query) {
     const cq = update.callback_query;
+    const isOwner = String(cq.from?.id) === String(shop.telegram_owner_chat_id);
+
+    // گفتگوی ویجت سایت
+    const web = /^web_release:(\d+)$/.exec(cq.data || '');
+    if (web && isOwner) {
+      endAgentSession(shop.id, Number(web[1]));
+      await telegram.answerCallbackQuery(token, cq.id, 'گفتگو به دستیار برگشت.');
+      return;
+    }
+
     const m = /^release:(.+)$/.exec(cq.data || '');
-    if (m && String(cq.from?.id) === String(shop.telegram_owner_chat_id)) {
+    if (m && isOwner) {
       endTelegramHandoff(shop.id, m[1]);
       await telegram.answerCallbackQuery(token, cq.id, 'گفتگو به دستیار برگشت.');
     } else {
@@ -1808,6 +1850,20 @@ async function handleOwnerMessage(shop, token, msg, chatId, text) {
     return;
   }
 
+  // مشتریِ ویجت سایت: جواب در گفتگو ثبت می‌شود و ویجت مشتری آن را با poll تحویل می‌گیرد
+  if (link.conversation_id) {
+    const saved = addAgentMessage(shop.id, link.conversation_id, text.slice(0, 4000), AGENT_HANDOFF_MINUTES);
+    if (!saved) {
+      await telegram.sendMessage(token, chatId, 'این گفتگو دیگر در دسترس نیست (شاید حذف شده باشد).');
+      return;
+    }
+    await telegram.sendMessage(token, chatId,
+      `✅ برای مشتری در سایت فرستاده شد. دستیار تا ${AGENT_HANDOFF_MINUTES} دقیقه در این گفتگو ساکت می‌ماند.`, {
+        reply_markup: { inline_keyboard: [[{ text: '↩️ برگرداندن به دستیار', callback_data: 'web_release:' + link.conversation_id }]] }
+      });
+    return;
+  }
+
   await telegram.sendMessage(token, link.customer_chat_id, text.slice(0, 4000));
   // از این لحظه دستیار برای همین مشتری ساکت می‌شود تا گفتگو دست فروشنده بماند
   startTelegramHandoff(shop.id, link.customer_chat_id, TELEGRAM_HANDOFF_MINUTES);
@@ -1827,25 +1883,33 @@ async function handleOwnerMessage(shop, token, msg, chatId, text) {
 // اعلان تلگرام برای گفتگوی ویجتِ سایت. برخلاف مشتری تلگرامی، اینجا مشتری روی سایت است و
 // راهی برای رساندن پاسخِ تلگرام به او نداریم، پس نگاشت Reply ثبت نمی‌کنیم و فروشنده را
 // صریحاً به پنل/تماس تلفنی ارجاع می‌دهیم.
-async function notifyOwnerOfWebHandoff(shop, { message, pageUrl, reason }) {
+async function notifyOwnerOfWebHandoff(shop, { message, pageUrl, reason, conversationId, title }) {
   if (!shop.telegram_owner_chat_id) return;
+  // اگر پلن فروشگاه دیگر تلگرام ندارد (مثلاً به پلن رایگان برگشته)، وب‌هوک جواب‌هایش را
+  // هم نمی‌پذیرد؛ پس اعلانی هم نمی‌فرستیم تا فروشنده پیامی نگیرد که نتواند جوابش را بدهد.
+  if (!shopSupportsTelegram(shop)) return;
   const token = shopTelegramToken(shop);
   if (!token) return;
 
   const lines = [
-    '🔔 مشتری در سایت به کارشناس نیاز دارد' + (reason ? ` — ${reason}` : ''),
+    title || ('🔔 مشتری در سایت به کارشناس نیاز دارد' + (reason ? ` — ${reason}` : '')),
     '',
     `«${String(message).slice(0, 700)}»`
   ];
   if (pageUrl) lines.push('', `🔗 صفحه: ${pageUrl}`);
-  lines.push(
-    '',
-    'این مشتری از ویجت سایت پیام داده و در تلگرام نیست؛ اینجا Reply به او نمی‌رسد.',
-    'گفتگو در پنل، تب «در حال انتظار» است: https://api.beporsid.com/dashboard.html'
-  );
+  lines.push('', conversationId
+    ? '↩️ برای جواب دادن، روی همین پیام Reply بزنید؛ متن شما همان لحظه در ویجت سایت به مشتری نشان داده می‌شود.'
+    : 'گفتگو در پنل، تب «در حال انتظار» است: https://api.beporsid.com/dashboard.html');
 
   try {
-    await telegram.sendMessage(token, shop.telegram_owner_chat_id, lines.join('\n'));
+    const sent = await telegram.sendMessage(token, shop.telegram_owner_chat_id, lines.join('\n'),
+      conversationId
+        ? { reply_markup: { inline_keyboard: [[{ text: '↩️ برگرداندن به دستیار', callback_data: 'web_release:' + conversationId }]] } }
+        : undefined);
+    // نگاشت پیام اعلان به همین گفتگوی سایت، تا Reply فروشنده به مشتری درست برسد
+    if (conversationId && sent && sent.message_id) {
+      saveTelegramNotification(shop.id, sent.message_id, '', conversationId);
+    }
   } catch (e) {
     console.error('خطای اعلان گفتگوی سایت به فروشنده:', e.message);
   }
@@ -2005,6 +2069,38 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
     return res.status(404).json({ error: 'فروشگاهی با این کلید پیدا نشد.' });
   }
 
+  const sid = (typeof sessionId === 'string' && /^[\w-]{6,64}$/.test(sessionId))
+    ? sessionId
+    : 'anon_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+  // اگر کارشناس انسانی همین حالا این گفتگو را در دست دارد، دستیار ساکت می‌ماند: پیام مشتری
+  // فقط ثبت و به فروشنده اعلام می‌شود تا خودش جواب بدهد و مشتری دو جواب موازی نگیرد.
+  if (isAgentActive(shop.id, sid)) {
+    let convId = null;
+    try {
+      convId = logCustomerMessage(shop.id, sid, typeof pageUrl === 'string' ? pageUrl.slice(0, 500) : null, message.slice(0, 4000));
+    } catch (e) {
+      console.error('خطای ثبت پیام مشتری در حالت کارشناس:', e?.message || e);
+    }
+    res.json({
+      reply: '',
+      products: [],
+      searchLink: null,
+      searchLabel: '',
+      handoff: null,
+      agentMode: true,
+      notice: 'پیام شما برای کارشناس فرستاده شد؛ به‌زودی همین‌جا جواب می‌دهد.'
+    });
+    notifyOwnerOfWebHandoff(shop, {
+      message,
+      pageUrl: typeof pageUrl === 'string' ? pageUrl.slice(0, 300) : null,
+      reason: '',
+      conversationId: convId,
+      title: '💬 پیام جدید مشتری (گفتگو دست شماست)'
+    }).catch(e => console.error('خطای اعلان تلگرام:', e?.message || e));
+    return;
+  }
+
   // سقف پاسخ ماهانه‌ی پلن فروشگاه. بدون این بررسی، سقفی که در تعرفه فروخته می‌شود هیچ‌جا
   // اعمال نمی‌شد و هرکسی با برداشتن siteKey از سورس سایت مشتری می‌توانست بی‌نهایت
   // درخواست بزند و هزینه‌ی هوش مصنوعی را بالا ببرد.
@@ -2018,11 +2114,9 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
 
     // ثبت گفتگو برای نمایش در پنل فروشگاه. ویجت‌های قدیمی که sessionId نمی‌فرستن،
     // هر پیامشون یک گفتگوی جدا می‌شه. خطای ثبت نباید جواب مشتری رو خراب کنه.
+    let conversationId = null;
     try {
-      const sid = (typeof sessionId === 'string' && /^[\w-]{6,64}$/.test(sessionId))
-        ? sessionId
-        : 'anon_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-      logExchange(shop.id, sid, typeof pageUrl === 'string' ? pageUrl.slice(0, 500) : null,
+      conversationId = logExchange(shop.id, sid, typeof pageUrl === 'string' ? pageUrl.slice(0, 500) : null,
         message.slice(0, 4000), out.reply.slice(0, 8000), out.products, !!out.handoff);
     } catch (logErr) {
       console.error('خطای ثبت گفتگو:', logErr?.message || logErr);
@@ -2037,7 +2131,8 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
       notifyOwnerOfWebHandoff(shop, {
         message,
         pageUrl: typeof pageUrl === 'string' ? pageUrl.slice(0, 300) : null,
-        reason: out.handoff.reason
+        reason: out.handoff.reason,
+        conversationId
       }).catch(e => console.error('خطای اعلان تلگرام گفتگوی سایت:', e?.message || e));
     }
   } catch (err) {
@@ -2050,6 +2145,25 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
     }
     res.status(500).json({ error: 'خطا در ارتباط با سرویس هوش مصنوعی.' });
   }
+});
+
+// ویجت مشتری هر چند ثانیه این را می‌پرسد تا پاسخ‌های کارشناس انسانی را تحویل بگیرد.
+// نیازی به احراز هویت ندارد چون sessionId یک شناسه‌ی تصادفی ۹۶ بیتی است که فقط خود
+// مرورگر مشتری دارد؛ ولی عمداً فقط پیام‌های نقش 'agent' برگردانده می‌شود، نه کل گفتگو.
+app.get('/api/chat/agent-messages', apiLimiter, (req, res) => {
+  const { siteKey, sessionId } = req.query;
+  if (!siteKey || typeof sessionId !== 'string' || !/^[\w-]{6,64}$/.test(sessionId)) {
+    return res.status(400).json({ error: 'پارامترهای نامعتبر.' });
+  }
+  const shop = getShopBySiteKey(siteKey);
+  if (!shop) return res.status(404).json({ error: 'فروشگاهی با این کلید پیدا نشد.' });
+
+  const after = Math.max(0, parseInt(req.query.after, 10) || 0);
+  const { items, agentActive } = getAgentMessagesAfter(shop.id, sessionId, after);
+  res.json({
+    items: items.map(m => ({ id: m.id, text: m.content, created_at: m.created_at })),
+    agentActive
+  });
 });
 
 app.get('/health', (req, res) => res.json({ status: 'ok' }));

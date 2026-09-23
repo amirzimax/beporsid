@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #555; font-family: 'Vazirmatn', Tahoma, sans-serif; }
+
+  /* هر لوگو ۱۰۸۰×۱۰۸۰ — اندازه‌ی استاندارد پروفایل اینستاگرام */
+  .logo {
+    width: 1080px; height: 1080px; position: relative; overflow: hidden;
+    display: grid; place-items: center;
+  }
+
+  /* ---------- A: تیره، نشان + نام (هم‌خانواده با تصویر OG سایت) ---------- */
+  #a { background: #0d1f22; }
+  #a::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(680px 560px at 72% 14%, rgba(23,167,159,.62), transparent 68%),
+      radial-gradient(560px 460px at 16% 92%, rgba(224,161,60,.34), transparent 70%);
+  }
+  #a .inner { position: relative; display: grid; place-items: center; gap: 54px; }
+  #a .mark {
+    width: 400px; height: 400px; border-radius: 122px;
+    background: linear-gradient(145deg, #1cb5ac, #0f6f6a);
+    display: grid; place-items: center;
+    box-shadow: 0 46px 90px -30px rgba(23,167,159,.9);
+  }
+  #a .mark svg { width: 218px; height: 218px; fill: #fff; }
+  #a .name { font-size: 158px; font-weight: 900; color: #fff; letter-spacing: -.035em; line-height: 1; }
+
+  /* ---------- B: فیروزه‌ای یکدست، فقط نشان (خواناترین در اندازه‌ی کوچک) ---------- */
+  #b { background: linear-gradient(145deg, #1cb5ac, #0b5b57); }
+  #b::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(620px 520px at 28% 18%, rgba(255,255,255,.16), transparent 66%);
+  }
+  #b svg { position: relative; width: 560px; height: 560px; fill: #fff; }
+
+  /* ---------- C: فیروزه‌ای، فقط نام (برندمحور) ---------- */
+  #c { background: linear-gradient(145deg, #17a79f, #0b5b57); }
+  #c::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(600px 500px at 26% 16%, rgba(255,255,255,.15), transparent 66%);
+  }
+  #c .name { position: relative; font-size: 290px; font-weight: 900; color: #fff; letter-spacing: -.05em; line-height: 1; }
+  #c .dot { position: relative; display: block; width: 76px; height: 76px; border-radius: 50%; background: #e0a13c; margin: 44px auto 0; }
+
+  /* ---------- D: روشن، نشان + نام ---------- */
+  #d { background: #fcfbf8; }
+  #d::before {
+    content: ''; position: absolute; inset: 0;
+    background:
+      radial-gradient(600px 500px at 78% 14%, rgba(18,128,122,.16), transparent 70%),
+      radial-gradient(520px 430px at 14% 90%, rgba(224,161,60,.20), transparent 72%);
+  }
+  #d .inner { position: relative; display: grid; place-items: center; gap: 52px; }
+  #d .mark {
+    width: 386px; height: 386px; border-radius: 118px;
+    background: linear-gradient(145deg, #17a79f, #0f6f6a);
+    display: grid; place-items: center;
+    box-shadow: 0 40px 80px -32px rgba(18,128,122,.7);
+  }
+  #d .mark svg { width: 210px; height: 210px; fill: #fff; }
+  #d .name { font-size: 152px; font-weight: 900; color: #13262b; letter-spacing: -.035em; line-height: 1; }
+</style>
+</head>
+<body>
+
+<!-- A -->
+<div class="logo" id="a">
+  <div class="inner">
+    <div class="mark">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.44 1.15 4.65 3 6.3V22l4.1-2.05c.93.2 1.9.3 2.9.3 5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg>
+    </div>
+    <div class="name">بپرسید</div>
+  </div>
+</div>
+
+<!-- B -->
+<div class="logo" id="b">
+  <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.44 1.15 4.65 3 6.3V22l4.1-2.05c.93.2 1.9.3 2.9.3 5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg>
+</div>
+
+<!-- C -->
+<div class="logo" id="c">
+  <div>
+    <div class="name">بپرسید</div>
+    <span class="dot"></span>
+  </div>
+</div>
+
+<!-- D -->
+<div class="logo" id="d">
+  <div class="inner">
+    <div class="mark">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.44 1.15 4.65 3 6.3V22l4.1-2.05c.93.2 1.9.3 2.9.3 5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg>
+    </div>
+    <div class="name">بپرسید</div>
+  </div>
+</div>
+
+</body>
+</html>

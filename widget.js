@@ -49,6 +49,10 @@
   // تا یک مقدار خراب، CSS داخل شادو-دام رو نشکنه
   if (!/^#[0-9a-fA-F]{6}$/.test(THEME_COLOR)) THEME_COLOR = '#2563eb';
 
+  // آدرس دریافت پاسخ کارشناس انسانی، از روی همان apiUrl ساخته می‌شود تا نیازی نباشد
+  // مشتری‌های قبلی کد نصبشان را عوض کنند (.../api/chat → .../api/chat/agent-messages)
+  const AGENT_POLL_URL = API_URL.replace(/\/+$/, '') + '/agent-messages';
+
   const STORAGE_KEY = 'beporsidChatbotState:' + SITE_KEY;
   const FONT_FAMILY = (window.ChatbotWidgetConfig && window.ChatbotWidgetConfig.fontFamily) || 'Vazirmatn';
 
@@ -278,6 +282,25 @@
       .msg.user .time { text-align: right; }
       .msg.bot .time { text-align: left; }
 
+      /* پیام کارشناس انسانی: عمداً از جواب هوش مصنوعی متمایز است تا مشتری بداند
+         الان با یک آدم واقعی حرف می‌زند */
+      .msg.agent { align-self: flex-end; }
+      .msg.agent .bubble-text {
+        background: #fff; color: #1f2430; border-bottom-left-radius: 5px;
+        border: 1.5px solid ${THEME_COLOR}; box-shadow: 0 1px 2px rgba(15,23,42,0.06);
+      }
+      .msg.agent .time { text-align: left; }
+      .agent-label {
+        align-self: flex-end; display: inline-flex; align-items: center; gap: 5px;
+        font-size: 11px; font-weight: 700; color: ${THEME_COLOR}; margin: 8px 4px 2px;
+      }
+      .agent-label svg { width: 12px; height: 12px; fill: currentColor; }
+      /* یادداشت سیستمی وسط چت، مثل «پیام شما برای کارشناس فرستاده شد» */
+      .sys-note {
+        align-self: center; text-align: center; font-size: 11.5px; color: #6b7280;
+        background: #eef1f5; border-radius: 999px; padding: 5px 13px; margin: 6px 0;
+      }
+
       /* پیام خطا با دکمه‌ی تلاش دوباره */
       .msg.error .bubble-text {
         background: #fff4f4; color: #9b2c2c; border: 1px solid #f5cfcf; border-bottom-left-radius: 5px;
@@ -491,6 +514,12 @@
   let displayLog = []; // برای بازسازی ظاهر چت بعد از رفرش/جابه‌جایی صفحه
   let pending = false; // تا وقتی جواب یک پیام نیومده، پیام بعدی فرستاده نمی‌شه
   let lastDayKey = '';  // برای نمایش جداکننده‌ی تاریخ بین روزهای مختلف
+  // --- حالت گفتگو با کارشناس انسانی ---
+  let lastAgentId = 0;          // شناسه‌ی آخرین پیام کارشناس که گرفته‌ایم (برای poll)
+  let lastSenderWasAgent = false; // برای اینکه برچسب «کارشناس» تکراری چاپ نشود
+  let agentActive = false;       // کارشناس گفتگو را در دست دارد
+  let pollTimer = null;
+  let conversationStarted = false; // تا مشتری پیامی نفرستاده، گفتگویی روی سرور وجود ندارد
 
   // شناسه‌ی یکتای این گفتگو؛ سرور با همین شناسه پیام‌ها رو در یک مکالمه جمع می‌کنه
   // تا صاحب فروشگاه بتونه در پنل مدیریت گفتگوها رو ببینه
@@ -562,7 +591,7 @@
   // این باعث می‌شه اگه مشتری بین صفحات سایت جابه‌جا بشه، مکالمه‌ش پاک نشه
   function saveState() {
     try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ open: opened, history, displayLog, sessionId }));
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ open: opened, history, displayLog, sessionId, lastAgentId, agentActive }));
     } catch (e) { /* اگه sessionStorage در دسترس نبود، مشکلی نیست، فقط ذخیره نمی‌شه */ }
   }
 
@@ -574,23 +603,36 @@
       history = state.history || [];
       displayLog = state.displayLog || [];
       if (state.sessionId) sessionId = state.sessionId;
+      lastAgentId = state.lastAgentId || 0;
+      agentActive = !!state.agentActive;
 
+      let prevWasAgent = false;
       displayLog.forEach(entry => {
         if (entry.type === 'msg') {
+          // برچسب «کارشناس» فقط بالای اولین پیام از یک رشته پیام انسانی
+          if (entry.sender === 'agent' && !prevWasAgent) renderAgentLabel();
           renderMessage(entry.text, entry.sender, entry.ts);
+          prevWasAgent = entry.sender === 'agent';
         } else if (entry.type === 'products') {
           renderProductCards(entry.products, entry.searchLink, entry.searchLabel);
         } else if (entry.type === 'error') {
           renderError(entry.text, entry.retryText, entry.ts);
         } else if (entry.type === 'handoff') {
           renderHandoff(entry.handoff);
+        } else if (entry.type === 'note') {
+          renderSysNote(entry.text);
         }
       });
+      lastSenderWasAgent = prevWasAgent;
+
+      // اگر قبلاً پیامی رد و بدل شده، گفتگو روی سرور وجود دارد و باید منتظر کارشناس بمانیم
+      if (history.length) conversationStarted = true;
 
       if (state.open) {
         opened = true;
         panel.classList.add('open');
         bubble.classList.add('open');
+        startPolling();
       }
     } catch (e) { /* داده‌ی خراب یا ناموجود - نادیده می‌گیریم */ }
   }
@@ -606,6 +648,9 @@
       }
       if (!isMobileDevice) inputEl.focus();
       scrollToBottom();
+      startPolling();   // تا پنل باز است، جواب کارشناس را زنده تحویل می‌گیریم
+    } else {
+      stopPolling();
     }
   }
   bubble.addEventListener('click', () => setOpen(!opened));
@@ -687,6 +732,40 @@
     const ts = Date.now();
     const el = renderMessage(text, sender, ts);
     displayLog.push({ type: 'msg', text, sender, ts });
+    saveState();
+    return el;
+  }
+
+  // برچسب «کارشناس» بالای اولین پیام انسانی، تا مشتری بفهمد از اینجا به بعد آدم جواب می‌دهد
+  function renderAgentLabel() {
+    const l = document.createElement('div');
+    l.className = 'agent-label';
+    l.innerHTML = '<svg viewBox="0 0 24 24"><path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10zm0 2c-4.4 0-8 2.2-8 5v1h16v-1c0-2.8-3.6-5-8-5z"/></svg><span>کارشناس</span>';
+    messagesEl.appendChild(l);
+    return l;
+  }
+
+  function renderSysNote(text) {
+    const n = document.createElement('div');
+    n.className = 'sys-note';
+    n.textContent = text;
+    messagesEl.appendChild(n);
+    scrollToBottom();
+    return n;
+  }
+
+  function addSysNote(text) {
+    renderSysNote(text);
+    displayLog.push({ type: 'note', text });
+    saveState();
+  }
+
+  // پیام کارشناس انسانی (از پنل یا از تلگرام فرستاده شده)
+  function addAgentMessage(text, ts) {
+    if (!lastSenderWasAgent) renderAgentLabel();
+    const el = renderMessage(text, 'agent', ts || Date.now());
+    displayLog.push({ type: 'msg', text, sender: 'agent', ts: ts || Date.now() });
+    lastSenderWasAgent = true;
     saveState();
     return el;
   }
@@ -861,6 +940,43 @@
     sendBtn.disabled = on;
   }
 
+  // ---------- دریافت پاسخ کارشناس انسانی ----------
+  // چون این پروژه WebSocket ندارد، ویجت هر چند ثانیه یک درخواست سبک می‌زند. فقط وقتی
+  // پنل باز است و گفتگویی شروع شده poll می‌کنیم تا روی بازدیدکننده‌های عادی بار اضافه نیفتد.
+  const POLL_MS = 7000;
+
+  async function pollAgentMessages() {
+    if (!conversationStarted) return;
+    try {
+      const url = AGENT_POLL_URL + '?siteKey=' + encodeURIComponent(SITE_KEY) +
+        '&sessionId=' + encodeURIComponent(sessionId) + '&after=' + lastAgentId;
+      const res = await fetch(url);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data && Array.isArray(data.items) && data.items.length) {
+        data.items.forEach(m => {
+          const ts = m.created_at ? Date.parse(m.created_at.replace(' ', 'T') + 'Z') : Date.now();
+          addAgentMessage(m.text, isNaN(ts) ? Date.now() : ts);
+          if (m.id > lastAgentId) lastAgentId = m.id;
+        });
+        saveState();
+      }
+      if (data && typeof data.agentActive === 'boolean') {
+        agentActive = data.agentActive;
+      }
+    } catch (e) { /* قطعی موقت اینترنت نباید چیزی را خراب کند */ }
+  }
+
+  function startPolling() {
+    if (pollTimer || !conversationStarted) return;
+    pollTimer = setInterval(pollAgentMessages, POLL_MS);
+    pollAgentMessages();
+  }
+
+  function stopPolling() {
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+
   // ارسال پیام به سرور. در حالت تلاش دوباره (isRetry) پیام مشتری قبلاً روی صفحه هست
   // و دوباره اضافه نمی‌شه؛ فقط درخواست تکرار می‌شه.
   async function submit(text, isRetry) {
@@ -885,12 +1001,24 @@
 
       typingEl.remove();
 
-      if (data && data.reply) {
+      // گفتگو روی سرور ساخته شد؛ از این به بعد باید منتظر جواب کارشناس هم باشیم
+      conversationStarted = true;
+      startPolling();
+
+      // کارشناس گفتگو را در دست دارد: دستیار جواب نمی‌دهد و منتظر پاسخ انسانی می‌مانیم
+      if (data && data.agentMode) {
+        agentActive = true;
+        lastSenderWasAgent = false;
+        addSysNote(data.notice || 'پیام شما برای کارشناس فرستاده شد.');
+        history.push({ role: 'user', text });
+        saveState();
+      } else if (data && data.reply) {
         addMessage(data.reply, 'bot');
         addProductCards(data.products, data.searchLink, data.searchLabel);
         addHandoff(data.handoff);
         history.push({ role: 'user', text });
         history.push({ role: 'assistant', text: data.reply });
+        lastSenderWasAgent = false;
         saveState();
       } else {
         // خطاهای مربوط به تنظیمات (کلید اشتباه و...) قابل تکرار نیستن؛ بقیه دکمه‌ی تلاش دوباره دارن
