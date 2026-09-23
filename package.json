@@ -1,0 +1,25 @@
+{
+  "name": "shop-chatbot-mvp",
+  "version": "0.1.0",
+  "description": "MVP backend for AI chatbot widget powered by Gemini API",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.3.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^8.7.0",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "mammoth": "^1.12.3",
+    "multer": "^1.4.5-lts.1",
+    "pdf-parse": "^1.1.4",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  }
+}

@@ -1,0 +1,30 @@
+# رمزها و تنظیمات محلی
+.env
+.env.*
+!.env.example
+
+# وابستگی‌ها
+node_modules/
+
+# دیتابیس واقعی (شامل اطلاعات مشتری‌ها)
+chatbot.db
+chatbot.db-shm
+chatbot.db-wal
+*.sqlite
+*.sqlite3
+backups/
+
+# لاگ و فایل‌های موقت
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# ادیتور
+.vscode/
+.idea/
+*.swp
+
+# تنظیمات محلی Claude Code
+.claude/settings.local.json
+.claude/release.md

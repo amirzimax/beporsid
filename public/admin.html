@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>پنل مدیریت چت‌بات</title>
+<style>
+  body { font-family: Tahoma, sans-serif; background: #f4f4f4; margin: 0; padding: 30px; }
+  .container { max-width: 700px; margin: 0 auto; }
+  h1 { color: #2563eb; }
+  .card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  h2 { margin-top: 0; font-size: 18px; color: #333; }
+  label { display: block; margin: 10px 0 4px; font-weight: bold; font-size: 14px; }
+  input[type="text"], textarea { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; box-sizing: border-box; }
+  textarea { min-height: 60px; resize: vertical; }
+  button { background: #2563eb; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; margin-top: 12px; font-family: inherit; }
+  button:hover { background: #1d4ed8; }
+  #excel-status, #rules-status { margin-top: 10px; font-size: 14px; }
+  .success { color: #16a34a; }
+  .error { color: #dc2626; }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { border: 1px solid #eee; padding: 6px; text-align: right; }
+  th { background: #f9f9f9; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>پنل مدیریت چت‌بات</h1>
+
+  <div class="card">
+    <h2>۱. آپلود فایل اکسل محصولات</h2>
+    <p style="font-size:13px;color:#666;">فایل باید ستون‌های «نام»، «قیمت»، «موجودی» و «توضیحات» داشته باشد. با آپلود جدید، لیست محصولات قبلی جایگزین می‌شود.</p>
+    <input type="file" id="excel-file" accept=".xlsx,.xls" />
+    <br>
+    <button onclick="uploadExcel()">آپلود و جایگزینی محصولات</button>
+    <div id="excel-status"></div>
+    <div id="products-preview"></div>
+  </div>
+
+  <div class="card">
+    <h2>۲. ویرایش اطلاعات و قوانین فروشگاه</h2>
+    <label>نام فروشگاه</label>
+    <input type="text" id="shop_name" />
+
+    <label>قوانین ارسال</label>
+    <textarea id="shipping"></textarea>
+
+    <label>قوانین مرجوعی</label>
+    <textarea id="returns"></textarea>
+
+    <label>قوانین گارانتی</label>
+    <textarea id="warranty"></textarea>
+
+    <button onclick="saveRules()">ذخیره‌ی تغییرات</button>
+    <div id="rules-status"></div>
+  </div>
+</div>
+
+<script>
+  // رمز عبور ادمین رو یک بار می‌پرسیم و برای همه‌ی درخواست‌ها استفاده می‌کنیم
+  let adminPassword = '';
+
+  function getAuthHeader() {
+    if (!adminPassword) {
+      adminPassword = prompt('رمز عبور پنل مدیریت را وارد کنید:');
+    }
+    return 'Basic ' + btoa('admin:' + adminPassword);
+  }
+
+  async function loadCurrentData() {
+    try {
+      const res = await fetch('/admin/data', {
+        headers: { Authorization: getAuthHeader() }
+      });
+      if (res.status === 401) {
+        adminPassword = ''; // رمز اشتباه بود، دوباره بپرس
+        return alert('رمز عبور اشتباه است.');
+      }
+      const data = await res.json();
+      document.getElementById('shop_name').value = data.shop_name || '';
+      document.getElementById('shipping').value = data.policies?.shipping || '';
+      document.getElementById('returns').value = data.policies?.returns || '';
+      document.getElementById('warranty').value = data.policies?.warranty || '';
+      renderProductsPreview(data.products || []);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function renderProductsPreview(products) {
+    const el = document.getElementById('products-preview');
+    if (!products.length) { el.innerHTML = ''; return; }
+    let html = '<table><tr><th>نام</th><th>قیمت</th><th>موجودی</th></tr>';
+    products.forEach(p => {
+      html += `<tr><td>${p.name}</td><td>${p.price.toLocaleString('fa-IR')}</td><td>${p.stock}</td></tr>`;
+    });
+    html += '</table>';
+    el.innerHTML = html;
+  }
+
+  async function uploadExcel() {
+    const fileInput = document.getElementById('excel-file');
+    const statusEl = document.getElementById('excel-status');
+
+    if (!fileInput.files.length) {
+      statusEl.innerHTML = '<span class="error">لطفاً یک فایل انتخاب کنید.</span>';
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    statusEl.innerHTML = 'در حال آپلود...';
+
+    try {
+      const res = await fetch('/admin/upload-excel', {
+        method: 'POST',
+        headers: { Authorization: getAuthHeader() },
+        body: formData
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        statusEl.innerHTML = `<span class="success">${data.count} محصول با موفقیت جایگزین شد.</span>`;
+        renderProductsPreview(data.products);
+      } else {
+        statusEl.innerHTML = `<span class="error">${data.error}</span>`;
+      }
+    } catch (err) {
+      statusEl.innerHTML = '<span class="error">خطا در ارتباط با سرور.</span>';
+    }
+  }
+
+  async function saveRules() {
+    const statusEl = document.getElementById('rules-status');
+    const payload = {
+      shop_name: document.getElementById('shop_name').value,
+      shipping: document.getElementById('shipping').value,
+      returns: document.getElementById('returns').value,
+      warranty: document.getElementById('warranty').value
+    };
+
+    statusEl.innerHTML = 'در حال ذخیره...';
+
+    try {
+      const res = await fetch('/admin/update-rules', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: getAuthHeader()
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (res.ok) {
+        statusEl.innerHTML = '<span class="success">با موفقیت ذخیره شد.</span>';
+      } else {
+        statusEl.innerHTML = `<span class="error">${data.error}</span>`;
+      }
+    } catch (err) {
+      statusEl.innerHTML = '<span class="error">خطا در ارتباط با سرور.</span>';
+    }
+  }
+
+  loadCurrentData();
+</script>
+</body>
+</html>
