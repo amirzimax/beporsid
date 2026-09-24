@@ -1,6 +1,7 @@
 // ==================== باشگاه مشتریان ====================
 // پیامک به کاربران خودِ بپرسید (صاحبان فروشگاه‌ها)، نه به مشتری‌های آن‌ها:
-//   - خودکار: خوش‌آمد بعد از ثبت‌نام، یادآوری ۷ روز و ۱ روز مانده به پایان اشتراک، پایان اشتراک
+//   - خودکار: خوش‌آمد بعد از ثبت‌نام، یادآوری ۷ روز و ۱ روز مانده به پایان اشتراک، پایان اشتراک،
+//     و یادآوری راه‌اندازی برای تازه‌واردی که دستیار را آماده یا نصب نکرده
 //   - کمپین: پیام مناسبتی یا تبلیغاتی به یک گروه از کاربران، فوری یا زمان‌بندی‌شده
 //
 // چند قاعده که عمداً سخت‌گیرانه است:
@@ -194,19 +195,42 @@ function reminderFor(s, now = Date.now()) {
   return null;
 }
 
+// یادآوری راه‌اندازی برای کاربر تازه‌وارد. فقط تا چند روز بعد از ثبت‌نام، تا روشن کردنش برای
+// همه‌ی حساب‌های قدیمی یک‌جا پیامک نفرستد.
+function nudgeFor(s, now = Date.now()) {
+  const created = parseUtc(s.created_at);
+  if (!created) return null;
+  const hours = (now - created) / 3600000;
+  if (!s.is_setup && hours >= 24 && hours <= 7 * 24) return 'nudge_setup';
+  if (s.is_setup && !s.is_installed && hours >= 48 && hours <= 10 * 24) return 'nudge_install';
+  return null;
+}
+
+// پیام‌های خودکاری که الان برای این کاربر وقتشان رسیده، همراه کلید یکتای هرکدام
+function dueAutomations(s) {
+  const out = [];
+  const r = reminderFor(s);
+  // کلید شامل تاریخ انقضاست: با تمدید، تاریخ عوض می‌شود و دوره‌ی بعد دوباره یادآوری می‌گیرد
+  if (r) out.push([r, `${r}:${s.id}:${s.plan_expires_at}`]);
+  const n = nudgeFor(s);
+  if (n) out.push([n, `${n}:${s.id}`]);
+  return out;
+}
+
+const SCHEDULED_AUTOMATIONS = ['renew_7', 'renew_1', 'expired', 'nudge_setup', 'nudge_install'];
+
 async function runReminders() {
   if (!SERVICE_SENDER || !inSendingHours()) return;
   const autos = {};
-  for (const k of ['renew_7', 'renew_1', 'expired']) autos[k] = getSmsAutomation(k);
+  for (const k of SCHEDULED_AUTOMATIONS) autos[k] = getSmsAutomation(k);
   if (!Object.values(autos).some(a => a && a.enabled)) return;
 
   for (const s of listSmsRecipients()) {
-    const key = reminderFor(s);
-    if (!key || !autos[key] || !autos[key].enabled) continue;
-    // کلید شامل تاریخ انقضاست: با تمدید، تاریخ عوض می‌شود و دوره‌ی بعد دوباره یادآوری می‌گیرد
-    const dedup = `${key}:${s.id}:${s.plan_expires_at}`;
-    if (countSmsFailures(dedup) >= MAX_RETRIES) continue;
-    await sendOne({ shop: s, phone: s.phone, body: render(autos[key].body, s), kind: key, ref: dedup, dedupKey: dedup, sender: SERVICE_SENDER });
+    for (const [key, dedup] of dueAutomations(s)) {
+      if (!autos[key] || !autos[key].enabled) continue;
+      if (countSmsFailures(dedup) >= MAX_RETRIES) continue;
+      await sendOne({ shop: s, phone: s.phone, body: render(autos[key].body, s), kind: key, ref: dedup, dedupKey: dedup, sender: SERVICE_SENDER });
+    }
   }
 }
 
@@ -322,7 +346,7 @@ function startScheduler() {
 
 module.exports = {
   AUDIENCES, VARIABLES, OPT_OUT_SUFFIX,
-  render, smsParts, reminderFor, selectAudience, audienceCounts,
+  render, smsParts, reminderFor, nudgeFor, selectAudience, audienceCounts,
   validateCampaign, scheduleCampaign, runCampaign, runReminders, sendWelcome, sendTest,
   getCredit, status, startScheduler, tick
 };

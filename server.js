@@ -99,7 +99,9 @@ const {
   updateSmsAutomation,
   listSmsCampaigns,
   cancelSmsCampaign,
-  listSmsLog
+  listSmsLog,
+  markWidgetSeen,
+  listActivation
 } = require('./db');
 
 const app = express();
@@ -1305,6 +1307,42 @@ app.get('/api/admin/conversations/:id', adminOnly, (req, res) => {
   res.json({ conversation: conv });
 });
 
+// ==================== قیف فعال‌سازی ====================
+// مرحله‌ها پشت‌سرهم حساب می‌شوند: کسی که ویجت را نصب کرده ولی دستیار را آماده نکرده،
+// در مرحله‌ی «آماده‌سازی» گیر است، چون دستیارش به مشتری جواب درست نمی‌دهد.
+const FUNNEL_STAGES = [
+  ['signup', 'ثبت‌نام', () => true],
+  ['setup', 'دستیار را آماده کرد', s => s.is_setup],          // اتصال فروشگاه، محصول یا پایگاه دانش
+  ['installed', 'ویجت را روی سایت نصب کرد', s => s.is_installed],
+  ['conversation', 'اولین گفتگوی واقعی', s => s.has_conversation],
+  ['paid', 'مشترک پولی شد', s => s.has_paid]
+];
+
+app.get('/api/admin/funnel', adminOnly, (req, res) => {
+  const days = [7, 30, 90].includes(Number(req.query.days)) ? Number(req.query.days) : 0;
+  // حساب‌های خود مدیر آمار را خراب می‌کنند
+  const shops = listActivation(days).filter(s => !isAdminShop(s));
+  const counts = FUNNEL_STAGES.map(() => 0);
+  const stuck = [];
+  for (const s of shops) {
+    let reached = 0;
+    while (reached + 1 < FUNNEL_STAGES.length && FUNNEL_STAGES[reached + 1][2](s)) reached++;
+    for (let i = 0; i <= reached; i++) counts[i]++;
+    if (reached < FUNNEL_STAGES.length - 1) {
+      stuck.push({
+        id: s.id, shop_name: s.shop_name, owner_name: s.owner_name, phone: s.phone,
+        created_at: s.created_at, last_activity: s.last_activity, widget_domain: s.widget_domain,
+        stuck_at: FUNNEL_STAGES[reached + 1][0]
+      });
+    }
+  }
+  res.json({
+    days,
+    stages: FUNNEL_STAGES.map(([key, label], i) => ({ key, label, count: counts[i] })),
+    stuck
+  });
+});
+
 // ==================== اعلان‌های مدیریتی ====================
 
 app.get('/api/admin/alerts', adminOnly, (req, res) => {
@@ -1320,7 +1358,7 @@ app.post('/api/admin/alerts/test', adminOnly, async (req, res) => {
 
 // ==================== باشگاه مشتریان (پیامک به کاربران بپرسید) ====================
 
-const SMS_AUTOMATION_KEYS = ['welcome', 'renew_7', 'renew_1', 'expired'];
+const SMS_AUTOMATION_KEYS = ['welcome', 'renew_7', 'renew_1', 'expired', 'nudge_setup', 'nudge_install'];
 
 app.get('/api/admin/crm', adminOnly, async (req, res) => {
   res.json({
@@ -2615,9 +2653,21 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
 // تنظیمات رفتاری ویجت (فرم شروع گفتگو، پیام خودکار). ویجت موقع لود این را می‌گیرد تا
 // تغییرات پنل بدون عوض کردن کد نصب روی سایت فروشگاه اعمال شود. فقط چیزهایی برمی‌گردد
 // که به‌هرحال به بازدیدکننده نشان داده می‌شود.
+// نصب ویجت از روی Origin درخواست تنظیمات تشخیص داده می‌شود. پیش‌نمایش داخل پنل و محیط
+// توسعه نصب حساب نمی‌شوند. (Origin قابل جعل است، ولی این فقط برای آمار و راهنمایی است.)
+const NOT_AN_INSTALL = new Set(['api.beporsid.com', 'localhost', '127.0.0.1']);
+function recordWidgetSeen(shop, origin) {
+  let host;
+  try { host = new URL(origin).hostname.toLowerCase(); } catch (e) { return; }
+  if (!host || NOT_AN_INSTALL.has(host)) return;
+  try { markWidgetSeen(shop.id, host.slice(0, 120)); }
+  catch (e) { console.error('خطای ثبت نصب ویجت:', e.message); }
+}
+
 app.get('/api/chat/config', apiLimiter, (req, res) => {
   const shop = typeof req.query.siteKey === 'string' ? getShopBySiteKey(req.query.siteKey) : null;
   if (!shop) return res.status(404).json({ error: 'فروشگاهی با این کلید پیدا نشد.' });
+  recordWidgetSeen(shop, req.get('origin'));
   const autoText = (shop.auto_message_text || '').trim();
   res.set('Cache-Control', 'public, max-age=60');
   res.json({

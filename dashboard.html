@@ -559,6 +559,25 @@
   .adm-table tbody tr.clickable:hover { background: var(--line-soft); }
   .adm-num { font-variant-numeric: tabular-nums; }
 
+  /* ---------- قیف فعال‌سازی ---------- */
+  .funnel-seg { flex: none; margin-bottom: 0; }
+  .funnel-seg button { flex: none; white-space: nowrap; padding: 8px 12px; font-size: 13px; }
+  .funnel { display: grid; gap: 2px; position: relative; }
+  .funnel-row { display: grid; grid-template-columns: 180px 1fr 120px; align-items: center; gap: 12px; padding: 7px 4px; border-radius: 8px; cursor: default; }
+  .funnel-row:hover { background: var(--line-soft); }
+  .funnel-row .lbl { font-size: 13px; color: var(--ink); }
+  .funnel-track { height: 14px; background: var(--line-soft); border-radius: 4px 0 0 4px; overflow: hidden; }
+  /* خط پایه سمت راست (RTL)؛ فقط سرِ داده گرد است */
+  .funnel-bar { height: 100%; background: var(--firooze); border-radius: 4px 0 0 4px; min-width: 2px; transition: width .3s ease; }
+  .funnel-row .val { font-size: 13px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .funnel-row .val span { color: var(--ink-soft); font-size: 12px; margin-inline-start: 4px; }
+  .funnel-tip { position: fixed; z-index: 50; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; font-size: 12.5px; line-height: 1.7; box-shadow: 0 8px 24px -8px rgba(0,0,0,.25); pointer-events: none; max-width: 260px; }
+  .funnel-tip b { font-weight: 700; }
+  @media (max-width: 560px) {
+    .funnel-row { grid-template-columns: 1fr auto; row-gap: 6px; }
+    .funnel-row .funnel-track { grid-column: 1 / -1; grid-row: 2; }
+  }
+
   /* ---------- باشگاه مشتریان ---------- */
   .crm-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
   .crm-strip { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
@@ -1344,6 +1363,14 @@
             <div id="copy-status" class="status"></div>
           </div>
         </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div><h2>وضعیت نصب</h2><p class="muted">بعد از گذاشتن کد، سایتتان را یک بار باز کنید و این‌جا را بررسی کنید.</p></div>
+            <button class="btn btn-outline" onclick="checkInstall(this)">بررسی دوباره</button>
+          </div>
+          <div id="install-status"></div>
+        </div>
       </section>
 
       <!-- ========== BILLING ========== -->
@@ -1576,6 +1603,24 @@
         <!-- نمای کلی -->
         <div data-apanel="overview">
           <div class="stats" id="adm-kpis"></div>
+          <div class="card">
+            <div class="card-head">
+              <div><h2>قیف فعال‌سازی</h2><p class="muted">از کاربرانی که در این بازه ثبت‌نام کرده‌اند، چند نفر به هر مرحله رسیده‌اند. حساب‌های مدیر حساب نمی‌شوند.</p></div>
+              <div class="seg funnel-seg">
+                <button data-fdays="7" onclick="adminFunnel(7)">۷ روز</button>
+                <button class="active" data-fdays="30" onclick="adminFunnel(30)">۳۰ روز</button>
+                <button data-fdays="90" onclick="adminFunnel(90)">۹۰ روز</button>
+                <button data-fdays="0" onclick="adminFunnel(0)">همه</button>
+              </div>
+            </div>
+            <div id="adm-funnel" class="funnel"></div>
+            <div class="funnel-tip hidden" id="funnel-tip" role="tooltip"></div>
+            <div class="card-head" style="margin-top:22px">
+              <div><h2 style="font-size:15px">کاربرانی که گیر کرده‌اند</h2><p class="muted">برای تماس یا پیگیری. روی هر ردیف بزنید تا جزئیات فروشگاه باز شود.</p></div>
+              <select id="adm-stuck-filter" style="max-width:230px" onchange="renderStuck()"></select>
+            </div>
+            <div class="adm-wrap"><div id="adm-stuck"></div></div>
+          </div>
           <div class="card">
             <div class="card-head"><div><h2>توزیع پلن‌ها و اتصال‌ها</h2></div></div>
             <div class="adm-kv" id="adm-breakdown"></div>
@@ -1962,6 +2007,7 @@
 
     $('shop_name').value = s.shop_name || '';
     $('sms_marketing').checked = !s.sms_marketing_opt_out;
+    renderInstallStatus(s);
     syncColor(s.theme_color || '#12807a');
     $('shipping_policy').value = s.shipping_policy || '';
     $('returns_policy').value = s.returns_policy || '';
@@ -3234,13 +3280,15 @@
     welcome: ['خوش‌آمد', 'بلافاصله بعد از ثبت‌نام'],
     renew_7: ['یادآوری تمدید (۷ روز مانده)', 'برای مشترکان پلن پولی، یک هفته قبل از پایان اشتراک'],
     renew_1: ['یادآوری تمدید (۱ روز مانده)', 'روز آخر اشتراک'],
-    expired: ['پایان اشتراک', 'تا ۳ روز بعد از پایان اشتراک، اگر تمدید نکرده باشد']
+    expired: ['پایان اشتراک', 'تا ۳ روز بعد از پایان اشتراک، اگر تمدید نکرده باشد'],
+    nudge_setup: ['یادآوری آماده‌سازی دستیار', '۱ تا ۷ روز بعد از ثبت‌نام، اگر فروشگاه را وصل نکرده و محصول یا پایگاه دانش ندارد'],
+    nudge_install: ['یادآوری نصب ویجت', '۲ تا ۱۰ روز بعد از ثبت‌نام، اگر دستیار آماده است ولی ویجت روی سایت دیده نشده']
   };
   const CRM_STATUS = {
     scheduled: ['زمان‌بندی‌شده', 'pending'], sending: ['در حال ارسال', 'pending'],
     sent: ['ارسال‌شده', 'connected'], failed: ['ناموفق', 'disconnected'], canceled: ['لغو‌شده', '']
   };
-  const CRM_LOG_KIND = { welcome: 'خوش‌آمد', renew_7: 'یادآوری ۷ روزه', renew_1: 'یادآوری ۱ روزه', expired: 'پایان اشتراک', campaign: 'کمپین', test: 'آزمایشی' };
+  const CRM_LOG_KIND = { welcome: 'خوش‌آمد', renew_7: 'یادآوری ۷ روزه', renew_1: 'یادآوری ۱ روزه', expired: 'پایان اشتراک', nudge_setup: 'یادآوری آماده‌سازی', nudge_install: 'یادآوری نصب', campaign: 'کمپین', test: 'آزمایشی' };
   const CRM_OPT_OUT = '\nلغو۱۱';
   let crmData = null;
 
@@ -3450,6 +3498,24 @@
     } finally { busy(btn, false); }
   }
 
+  function renderInstallStatus(s) {
+    $('install-status').innerHTML = s.widget_seen_at
+      ? `<span class="badge connected">نصب شده</span> <span style="font-size:13.5px">ویجت روی <b dir="ltr">${esc(s.widget_domain || '')}</b> دیده شد (آخرین بار ${esc(relTime(s.widget_seen_at))}).</span>`
+      : `<span class="badge pending">هنوز دیده نشده</span> <span style="font-size:13.5px">ویجت هنوز روی سایتی لود نشده است. اگر کد را گذاشته‌اید، سایت را باز کنید و «بررسی دوباره» را بزنید. اگر باز هم دیده نشد، از بخش پشتیبانی تیکت بزنید تا خودمان نصبش کنیم.</span>`;
+  }
+
+  async function checkInstall(btn) {
+    busy(btn, true);
+    try {
+      const d = await api('/api/me');
+      currentShop = d.shop;
+      renderInstallStatus(d.shop);
+      toast(d.shop.widget_seen_at ? 'ویجت روی سایت شما فعال است' : 'هنوز ویجت روی سایتی دیده نشده', d.shop.widget_seen_at ? 'ok' : 'err');
+    } catch (e) {
+      toast(e.message, 'err');
+    } finally { busy(btn, false); }
+  }
+
   async function saveSmsPreference(el) {
     try {
       const d = await api('/api/sms-preferences', { method: 'POST', json: { marketing_opt_out: !el.checked } });
@@ -3601,6 +3667,95 @@
       box.innerHTML = `<div class="kb-empty"><span class="error">${esc(e.message)}</span></div>`;
     }
     loadAdminAlerts();
+    adminFunnel(funnelState.days);
+  }
+
+  /* ---------- قیف فعال‌سازی ---------- */
+  const funnelState = { days: 30, data: null };
+  const STUCK_HINTS = {
+    setup: 'هنوز فروشگاه را وصل نکرده و محصول یا پایگاه دانش ندارد',
+    installed: 'دستیار آماده است ولی ویجت روی سایت دیده نشده',
+    conversation: 'ویجت نصب است ولی هنوز گفتگوی واقعی نداشته',
+    paid: 'فعال است ولی هنوز پلن پولی نخریده'
+  };
+  const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+
+  async function adminFunnel(days) {
+    funnelState.days = days;
+    document.querySelectorAll('[data-fdays]').forEach(b => b.classList.toggle('active', Number(b.dataset.fdays) === days));
+    const box = $('adm-funnel');
+    box.innerHTML = '<div class="kb-empty">در حال دریافت…</div>';
+    try {
+      funnelState.data = await api('/api/admin/funnel?days=' + days);
+    } catch (e) {
+      box.innerHTML = `<div class="kb-empty"><span class="error">${esc(e.message)}</span></div>`;
+      return;
+    }
+    const { stages, stuck } = funnelState.data;
+    const total = stages[0].count;
+    if (!total) {
+      box.innerHTML = '<div class="kb-empty">در این بازه ثبت‌نامی نبوده است.</div>';
+    } else {
+      box.innerHTML = stages.map((s, i) => `
+        <div class="funnel-row" data-i="${i}" tabindex="0" aria-label="${esc(s.label)}: ${fa(s.count)} نفر، ${fa(pct(s.count, total))} درصد">
+          <div class="lbl">${esc(s.label)}</div>
+          <div class="funnel-track"><div class="funnel-bar" style="width:${pct(s.count, total)}%"></div></div>
+          <div class="val">${fmtNum(s.count)} نفر<span>${fa(pct(s.count, total))}٪</span></div>
+        </div>`).join('');
+      box.querySelectorAll('.funnel-row').forEach(row => {
+        row.addEventListener('mouseenter', e => funnelTip(row, e));
+        row.addEventListener('mousemove', e => funnelTip(row, e));
+        row.addEventListener('focus', () => funnelTip(row));
+        row.addEventListener('mouseleave', () => $('funnel-tip').classList.add('hidden'));
+        row.addEventListener('blur', () => $('funnel-tip').classList.add('hidden'));
+      });
+    }
+
+    const sel = $('adm-stuck-filter');
+    const prev = sel.value;
+    sel.innerHTML = `<option value="">همه (${fmtNum(stuck.length)} نفر)</option>` + stages.slice(1).map(s => {
+      const n = stuck.filter(u => u.stuck_at === s.key).length;
+      return `<option value="${s.key}">مانده قبل از «${esc(s.label)}» (${fmtNum(n)})</option>`;
+    }).join('');
+    sel.value = prev && stages.some(s => s.key === prev) ? prev : '';
+    renderStuck();
+  }
+
+  function funnelTip(row, e) {
+    const { stages } = funnelState.data;
+    const i = Number(row.dataset.i);
+    const s = stages[i];
+    const total = stages[0].count;
+    let html = `<b>${esc(s.label)}</b><br>${fmtNum(s.count)} نفر · ${fa(pct(s.count, total))}٪ از ثبت‌نام‌ها`;
+    if (i > 0) {
+      const p = stages[i - 1];
+      html += `<br>${fa(pct(s.count, p.count))}٪ از مرحله‌ی قبل ادامه دادند · ${fmtNum(p.count - s.count)} نفر ماندند`;
+    }
+    const tip = $('funnel-tip');
+    tip.innerHTML = html;
+    tip.classList.remove('hidden');
+    const r = row.getBoundingClientRect();
+    const x = e ? e.clientX : r.left + r.width / 2;
+    const y = e ? e.clientY : r.top;
+    tip.style.left = Math.max(8, Math.min(window.innerWidth - tip.offsetWidth - 8, x - tip.offsetWidth / 2)) + 'px';
+    tip.style.top = Math.max(8, y - tip.offsetHeight - 12) + 'px';
+  }
+
+  function renderStuck() {
+    const box = $('adm-stuck');
+    if (!funnelState.data) return;
+    const f = $('adm-stuck-filter').value;
+    const list = funnelState.data.stuck.filter(u => !f || u.stuck_at === f);
+    if (!list.length) { box.innerHTML = '<div class="kb-empty">کسی در این مرحله گیر نکرده.</div>'; return; }
+    box.innerHTML = `<table class="adm-table">
+      <thead><tr><th>کاربر</th><th>موبایل</th><th>ثبت‌نام</th><th>آخرین گفتگو</th><th>وضعیت</th></tr></thead>
+      <tbody>${list.map(u => `<tr class="clickable" onclick="openAdminShop(${u.id})">
+        <td>${esc(u.owner_name || '—')}${u.shop_name ? `<div class="fine">${esc(u.shop_name)}</div>` : ''}</td>
+        <td class="adm-num" dir="ltr"><a href="tel:${esc(u.phone || '')}" onclick="event.stopPropagation()">${esc(fa(u.phone || '—'))}</a></td>
+        <td>${esc(relTime(u.created_at))}</td>
+        <td>${u.last_activity ? esc(relTime(u.last_activity)) : '—'}</td>
+        <td style="white-space:normal;min-width:200px">${esc(STUCK_HINTS[u.stuck_at] || '')}${u.widget_domain ? `<div class="fine" dir="ltr" style="text-align:right">${esc(u.widget_domain)}</div>` : ''}</td>
+      </tr>`).join('')}</tbody></table>`;
   }
 
   async function loadAdminAlerts() {

@@ -66,6 +66,10 @@ db.exec(`
     -- ۱ یعنی کاربر نخواسته پیامک مناسبتی و تبلیغاتیِ بپرسید را دریافت کند
     sms_marketing_opt_out INTEGER DEFAULT 0,
 
+    -- آخرین باری که ویجت روی یک سایت واقعی (غیر از خود بپرسید) لود شد؛ برای تشخیص نصب
+    widget_seen_at TEXT,
+    widget_domain TEXT,
+
     plan TEXT DEFAULT 'trial',
     plan_expires_at TEXT,
 
@@ -109,7 +113,9 @@ const migrations = {
   telegram_secret: "ALTER TABLE shops ADD COLUMN telegram_secret TEXT",
   telegram_owner_chat_id: "ALTER TABLE shops ADD COLUMN telegram_owner_chat_id TEXT",
   telegram_link_code: "ALTER TABLE shops ADD COLUMN telegram_link_code TEXT",
-  sms_marketing_opt_out: "ALTER TABLE shops ADD COLUMN sms_marketing_opt_out INTEGER DEFAULT 0"
+  sms_marketing_opt_out: "ALTER TABLE shops ADD COLUMN sms_marketing_opt_out INTEGER DEFAULT 0",
+  widget_seen_at: "ALTER TABLE shops ADD COLUMN widget_seen_at TEXT",
+  widget_domain: "ALTER TABLE shops ADD COLUMN widget_domain TEXT"
 };
 for (const [col, sql] of Object.entries(migrations)) {
   if (!existingColumns.includes(col)) db.exec(sql);
@@ -1180,7 +1186,9 @@ const SMS_AUTOMATION_DEFAULTS = {
   welcome: '{name} عزیز، به بپرسید خوش آمدید!\nدستیار هوش مصنوعی فروشگاهتان آماده است؛ هر ماه ۲۰۰ پاسخ رایگان دارید.\nشروع: {link}',
   renew_7: '{name} عزیز، اشتراک «{plan}» بپرسید {days} روز دیگر ({expiry}) به پایان می‌رسد.\nبرای اینکه پاسخ‌گویی چت‌بات قطع نشود تمدید کنید:\n{link}',
   renew_1: '{name} عزیز، اشتراک «{plan}» بپرسید فردا به پایان می‌رسد.\nتمدید در کمتر از یک دقیقه:\n{link}',
-  expired: '{name} عزیز، اشتراک «{plan}» بپرسید به پایان رسید.\nبرای ادامه‌ی پاسخ‌گویی کامل چت‌بات به مشتری‌ها تمدید کنید:\n{link}'
+  expired: '{name} عزیز، اشتراک «{plan}» بپرسید به پایان رسید.\nبرای ادامه‌ی پاسخ‌گویی کامل چت‌بات به مشتری‌ها تمدید کنید:\n{link}',
+  nudge_setup: '{name} عزیز، دستیار بپرسید هنوز چیزی درباره‌ی فروشگاهتان نمی‌داند.\nبا اتصال فروشگاه یا افزودن محصولات، در چند دقیقه آماده‌ی جواب دادن به مشتری‌هاست:\n{link}',
+  nudge_install: '{name} عزیز، دستیار فروشگاهتان آماده است ولی هنوز روی سایت نصب نشده.\nکد نصب فقط یک خط است؛ اگر کمک خواستید از پنل تیکت بزنید، خودمان نصبش می‌کنیم:\n{link}'
 };
 {
   const ins = db.prepare('INSERT OR IGNORE INTO sms_automations (key, enabled, body) VALUES (?, 0, ?)');
@@ -1208,14 +1216,49 @@ function updateSmsAutomation(key, { enabled, body }) {
   return getSmsAutomation(key);
 }
 
+// ---------- قیف فعال‌سازی ----------
+// گفتگو یا لود ویجت «واقعی» یعنی روی سایت خود فروشگاه، نه پیش‌نمایش داخل پنل (api.beporsid.com)
+const REAL_CONV = `c.page_url IS NOT NULL AND c.page_url NOT LIKE '%://api.beporsid.com%'`;
+const ACTIVATION_COLUMNS = `
+  (COALESCE(s.shopfa_password_enc, '') <> '' OR COALESCE(s.woo_consumer_secret_enc, '') <> ''
+    OR COALESCE(s.portal_password_enc, '') <> '') AS store_connected,
+  (COALESCE(s.shopfa_password_enc, '') <> '' OR COALESCE(s.woo_consumer_secret_enc, '') <> ''
+    OR COALESCE(s.portal_password_enc, '') <> ''
+    OR EXISTS (SELECT 1 FROM products p WHERE p.shop_id = s.id)
+    OR EXISTS (SELECT 1 FROM knowledge_items k WHERE k.shop_id = s.id)) AS is_setup,
+  (s.widget_seen_at IS NOT NULL
+    OR EXISTS (SELECT 1 FROM conversations c WHERE c.shop_id = s.id AND ${REAL_CONV})) AS is_installed,
+  EXISTS (SELECT 1 FROM conversations c WHERE c.shop_id = s.id AND ${REAL_CONV} AND c.message_count > 0) AS has_conversation,
+  EXISTS (SELECT 1 FROM payments pay WHERE pay.shop_id = s.id AND pay.status = 'paid') AS has_paid`;
+
+// ویجت موقع لود تنظیماتش را می‌گیرد؛ همان‌جا ثبت می‌کنیم روی کدام سایت دیده شده. برای اینکه
+// هر لود صفحه یک نوشتن در دیتابیس نباشد، حداکثر ساعتی یک بار (یا با عوض شدن دامنه) به‌روز می‌شود.
+function markWidgetSeen(shopId, domain) {
+  db.prepare(`
+    UPDATE shops SET widget_seen_at = datetime('now'), widget_domain = ?
+    WHERE id = ? AND (widget_seen_at IS NULL OR widget_seen_at < datetime('now', '-1 hour') OR widget_domain IS NOT ?)
+  `).run(domain, shopId, domain);
+}
+
+// هر فروشگاه با پرچم مرحله‌هایش؛ شمارش و «گیرکرده‌ها» در server.js ساخته می‌شود
+function listActivation(days) {
+  const where = days ? `WHERE s.created_at >= datetime('now', ?)` : '';
+  return db.prepare(`
+    SELECT s.id, s.shop_name, s.owner_name, s.phone, s.plan, s.created_at, s.widget_domain,
+      (SELECT MAX(c.last_message_at) FROM conversations c WHERE c.shop_id = s.id) AS last_activity,
+      ${ACTIVATION_COLUMNS}
+    FROM shops s ${where}
+    ORDER BY s.id DESC
+  `).all(...(days ? [`-${days} days`] : []));
+}
+
 // همه‌ی کاربرانی که شماره‌ی موبایل دارند؛ فیلتر مخاطب (رایگان، پولی، ...) در crm.js انجام
 // می‌شود چون تعداد فروشگاه‌ها کم است و منطقش آنجا خواناتر و قابل‌تست‌تر است.
 function listSmsRecipients() {
   return db.prepare(`
     SELECT s.id, s.phone, s.owner_name, s.shop_name, s.plan, s.plan_expires_at, s.created_at,
       s.sms_marketing_opt_out,
-      (COALESCE(s.shopfa_password_enc, '') <> '' OR COALESCE(s.woo_consumer_secret_enc, '') <> ''
-        OR COALESCE(s.portal_password_enc, '') <> '') AS store_connected
+      ${ACTIVATION_COLUMNS}
     FROM shops s
     WHERE COALESCE(s.phone, '') <> ''
   `).all();
@@ -1371,7 +1414,9 @@ function toPublicShop(shop) {
     telegram_bot_username: shop.telegram_bot_username || null,
     telegram_owner_linked: !!shop.telegram_owner_chat_id,
     telegram_link_code: shop.telegram_link_code || null,
-    sms_marketing_opt_out: !!shop.sms_marketing_opt_out
+    sms_marketing_opt_out: !!shop.sms_marketing_opt_out,
+    widget_seen_at: shop.widget_seen_at || null,
+    widget_domain: shop.widget_domain || null
   };
 }
 
@@ -1398,6 +1443,8 @@ module.exports = {
   listSmsLog,
   listAdminAlertTargets,
   dailySummary,
+  markWidgetSeen,
+  listActivation,
   encrypt,
   decrypt,
   getShopById,
