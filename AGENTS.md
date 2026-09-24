@@ -78,6 +78,7 @@ chatbot.db*        دیتابیس واقعی + فایل‌های WAL/SHM — ه�
 
 ### ویجت (widget.js)
 - تنظیمات از `window.ChatbotWidgetConfig` خوانده می‌شود: `apiUrl`, `siteKey`, `color`, `side`, `desktopBottom`, `desktopSideOffset`, `mobileBottom`, `mobileSideOffset`, `fontFamily`, `fontFace`. **کد embed در `dashboard.html` تولید می‌شود** — اگر کلیدی به ویجت اضافه کردی، تولیدکننده‌ی embed در dashboard و ستون متناظر در `db.js` و `/api/settings` را هم به‌روز کن.
+- تنظیمات رفتاری (فرم شروع گفتگو، پیام خودکار) در کد embed نیستند: ویجت موقع لود `GET /api/chat/config?siteKey=` را می‌خواند تا تغییرات پنل بدون عوض کردن کد نصب اعمال شوند. تنظیم رفتاری جدید را همین‌جا اضافه کن، نه به embed.
 - کل UI داخل Shadow DOM است تا CSS سایت میزبان نشت نکند. `z-index: 2147483000`.
 - وضعیت گفت‌وگو در `localStorage` با کلید `beporsidChatbotState:<siteKey>` ذخیره می‌شود.
 - گارد `window.__shopChatbotWidgetLoaded` مانع لود دوباره می‌شود.

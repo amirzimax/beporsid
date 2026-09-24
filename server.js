@@ -31,6 +31,8 @@ const {
   isAgentActive,
   endAgentSession,
   getAgentMessagesAfter,
+  getRecentMessages,
+  setConversationCustomer,
   getConversationBySession,
   listConversations,
   markConversationHandled,
@@ -662,6 +664,16 @@ async function wooFetch(base, path, params) {
 
 // جست‌وجوی محصولات از فروشگاه ووکامرس. کلید عمومی/خصوصی به‌صورت پارامتر URL ارسال می‌شن
 // (روش رسمی ووکامرس برای احراز هویت روی HTTPS، بدون نیاز به امضای OAuth).
+// تبدیل ساده‌ی HTML کوتاه (مثل توضیح کوتاه محصول ووکامرس) به متن یک‌خطی
+function stripHtml(html) {
+  return String(html || '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#0?39;/g, "'")
+    .replace(/&[a-z#0-9]+;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 async function searchWooProducts(shop, query) {
   if (!shop.woo_site_domain || !shop.woo_consumer_key || !shop.woo_consumer_secret_enc) {
     return { error: 'اتصال به فروشگاه ووکامرس هنوز در پنل تنظیم نشده است.' };
@@ -710,7 +722,9 @@ async function searchWooProducts(shop, query) {
       quantity,
       product_status: p.stock_status,
       thumb: (p.images && p.images[0] && p.images[0].src) || null,
-      link: p.permalink || null
+      link: p.permalink || null,
+      // توضیح کوتاه تا مدل برای سوال‌هایی مثل جنس یا نحوه‌ی نصب از داده‌ی واقعی جواب بدهد، نه حدس
+      description: stripHtml(p.short_description || '').slice(0, 300)
     };
   });
 
@@ -838,11 +852,29 @@ function searchManualProducts(shop, query) {
 
 async function searchProducts(shop, query) {
   const platform = getCommercePlatform(shop);
-  if (platform === 'woocommerce') return searchWooProducts(shop, query);
-  if (platform === 'shopfa') return searchShopfaProducts(shop, query);
-  if (platform === 'portal') return searchPortalProducts(shop, query);
-  if (platform === 'manual') return searchManualProducts(shop, query);
-  return { error: 'اتصال به فروشگاه هنوز در پنل تنظیم نشده است.' };
+  let result;
+  if (platform === 'woocommerce') result = await searchWooProducts(shop, query);
+  else if (platform === 'shopfa') result = await searchShopfaProducts(shop, query);
+  else if (platform === 'portal') result = await searchPortalProducts(shop, query);
+  else if (platform === 'manual') result = searchManualProducts(shop, query);
+  else return { error: 'اتصال به فروشگاه هنوز در پنل تنظیم نشده است.' };
+  return dedupeProducts(result);
+}
+
+// بعضی فروشگاه‌ها یک محصول را چند بار با شناسه‌های مختلف ثبت کرده‌اند؛ مشتری دو کارت یکسان
+// می‌دید و می‌پرسید «این دو تا چه فرقی دارن؟». محصول با عنوان و قیمت یکسان یک بار نشان داده
+// می‌شود و از بین تکراری‌ها، نسخه‌ای که لینک زنده دارد نگه داشته می‌شود.
+function dedupeProducts(result) {
+  if (!result || !Array.isArray(result.items)) return result;
+  const byKey = new Map();
+  for (const item of result.items) {
+    const key = `${normalizeText(item.title)}|${item.price}`;
+    const prev = byKey.get(key);
+    if (!prev || (!prev.link && item.link)) byKey.set(key, item);
+  }
+  const items = [...byKey.values()];
+  const removed = result.items.length - items.length;
+  return { ...result, items, total_count: Math.max(items.length, (result.total_count || 0) - removed) };
 }
 
 async function trackOrder(shop, orderCode) {
@@ -956,8 +988,17 @@ function describePageContext(page) {
 // ساخت پرامپت سیستمی مخصوص هر فروشگاه: پرامپت کلی + قوانین و اطلاعات همون فروشگاه + صفحه‌ی فعلی مشتری
 // تکه‌های مرتبط پایگاه دانش با پیام فعلی مشتری، برای تزریق مستقیم در پرامپت (مدل بدون
 // صدا زدن ابزار هم جواب درست داشته باشه). سقف حجم داره تا پرامپت سنگین نشه.
-function retrieveKnowledgeContext(shopId, message) {
+// پیام قبلی مشتری هم جست‌وجو می‌شود چون سوال‌های دنباله‌دار («خب اگه خراب بود چی؟») معمولاً
+// کلمه‌ی کلیدی ندارند و موضوع در پیام قبلی است.
+function retrieveKnowledgeContext(shopId, message, prevMessage) {
   const hits = knowledge.search(shopId, message, 4);
+  if (hits.length < 4 && prevMessage) {
+    const seen = new Set(hits.map(h => h.content));
+    for (const h of knowledge.search(shopId, prevMessage, 4)) {
+      if (hits.length >= 4) break;
+      if (!seen.has(h.content)) { hits.push(h); seen.add(h.content); }
+    }
+  }
   if (!hits.length) return '';
   let budget = 2500;
   const parts = [];
@@ -975,14 +1016,14 @@ ${parts.join('\n\n')}
 اگر جواب مشتری اینجا هست، از همین استفاده کن. اگر کافی نبود، ابزار search_knowledge را صدا بزن.`;
 }
 
-function buildSystemPrompt(shop, page, message) {
+function buildSystemPrompt(shop, page, message, prevMessage) {
   const base = BASE_PROMPT.replace(/\{\{\s*shop_name\s*\}\}/g, shop.shop_name || 'فروشگاه');
   const support = (shop.support_phone || shop.support_link)
     ? `\n\nکارشناس انسانی: در دسترسه (ابزار connect_to_agent اطلاعات تماس رو نشون می‌ده).${shop.support_hours ? ` ساعات پاسخ‌گویی: ${shop.support_hours}` : ''}`
     : '\n\nکارشناس انسانی: اطلاعات تماس در پنل ثبت نشده؛ در صورت نیاز مشتری رو به بخش «تماس با ما» سایت راهنمایی کن.';
 
   let kb = '';
-  try { kb = retrieveKnowledgeContext(shop.id, message); } catch (e) { console.error('خطای بازیابی دانش:', e.message); }
+  try { kb = retrieveKnowledgeContext(shop.id, message, prevMessage); } catch (e) { console.error('خطای بازیابی دانش:', e.message); }
 
   return `${base}
 
@@ -1286,8 +1327,19 @@ app.post('/api/settings', requireAuth, (req, res) => {
   const {
     shop_name, shipping_policy, returns_policy, warranty_policy, theme_color,
     widget_side, desktop_bottom, desktop_side_offset, mobile_bottom, mobile_side_offset,
-    support_phone, support_link, support_hours
+    support_phone, support_link, support_hours,
+    prechat_form_enabled, auto_message_enabled, auto_message_text, auto_message_delay,
+    auto_message_frequency, auto_message_open
   } = req.body;
+
+  // هر فیلد فقط وقتی فرستاده شده باشد عوض می‌شود (undefined → COALESCE مقدار قبلی را نگه می‌دارد)
+  const asFlag = v => (typeof v === 'boolean' ? (v ? 1 : 0) : undefined);
+  const delayNum = Number(auto_message_delay);
+  const cleanDelay = auto_message_delay === undefined || auto_message_delay === '' || !Number.isFinite(delayNum)
+    ? undefined : Math.min(Math.max(Math.round(delayNum), 0), 600);
+  if (auto_message_enabled === true && typeof auto_message_text === 'string' && !auto_message_text.trim()) {
+    return res.status(400).json({ error: 'برای فعال کردن پیام خودکار، متن پیام را بنویسید.' });
+  }
 
   // لینک پشتیبانی فقط http(s) یا tel/mailto پذیرفته می‌شه تا چیز عجیبی توی ویجت مشتری رندر نشه
   const cleanLink = typeof support_link === 'string'
@@ -1300,7 +1352,13 @@ app.post('/api/settings', requireAuth, (req, res) => {
     desktop_bottom, desktop_side_offset, mobile_bottom, mobile_side_offset,
     support_phone: typeof support_phone === 'string' ? support_phone.trim().slice(0, 40) : undefined,
     support_link: cleanLink === null ? undefined : cleanLink,
-    support_hours: typeof support_hours === 'string' ? support_hours.trim().slice(0, 120) : undefined
+    support_hours: typeof support_hours === 'string' ? support_hours.trim().slice(0, 120) : undefined,
+    prechat_form_enabled: asFlag(prechat_form_enabled),
+    auto_message_enabled: asFlag(auto_message_enabled),
+    auto_message_text: typeof auto_message_text === 'string' ? auto_message_text.trim().slice(0, 300) : undefined,
+    auto_message_delay: cleanDelay,
+    auto_message_frequency: auto_message_frequency === 'once' || auto_message_frequency === 'always' ? auto_message_frequency : undefined,
+    auto_message_open: asFlag(auto_message_open)
   });
   res.json({ shop: publicShop(updated) });
 });
@@ -2023,7 +2081,11 @@ async function handleTelegramUpdate(shop, update) {
 
   let out;
   try {
-    out = await runAssistant(shop, { message: customerMessage, history: [], page: null });
+    // تا قبل از این، هر پیام تلگرام بدون هیچ حافظه‌ای جواب داده می‌شد
+    let convHistory = [];
+    // «(در انتظار پاسخ شما)» جای‌نگهدار ثبت‌شده برای فروشنده است، نه جواب واقعی به مشتری
+    try { convHistory = getRecentMessages(shop.id, chat.session_id, 10).filter(m => m.text !== '(در انتظار پاسخ شما)'); } catch (e) { console.error('خطای خواندن تاریخچه‌ی تلگرام:', e.message); }
+    out = await runAssistant(shop, { message: customerMessage, history: convHistory, page: null });
   } catch (e) {
     console.error('خطای دستیار در تلگرام:', e?.message || e);
     await telegram.sendMessage(token, chatId, 'الان نتوانستم جواب بدهم. لطفاً چند لحظه بعد دوباره بپرسید.');
@@ -2113,6 +2175,12 @@ async function notifyOwnerOfWebHandoff(shop, { message, pageUrl, reason, convers
     '',
     `«${String(message).slice(0, 700)}»`
   ];
+  // اگر مشتری فرم شروع گفتگو را پر کرده، فروشنده بداند با چه کسی طرف است
+  let conv = null;
+  try { conv = conversationId ? getConversation(shop.id, conversationId) : null; } catch (e) { conv = null; }
+  if (conv && (conv.customer_name || conv.customer_phone)) {
+    lines.push('', `👤 ${[conv.customer_name, conv.customer_phone].filter(Boolean).join(' · ')}`);
+  }
   if (pageUrl) lines.push('', `🔗 صفحه: ${pageUrl}`);
   lines.push('', conversationId
     ? '↩️ برای جواب دادن، روی همین پیام Reply بزنید؛ متن شما همان لحظه در ویجت سایت به مشتری نشان داده می‌شود.'
@@ -2153,16 +2221,25 @@ async function notifyOwner(shop, token, customerChatId, chat, customerMessage, t
 // همه‌ی کانال‌ها (ویجت سایت و ربات تلگرام) از همین یک تابع استفاده می‌کنند تا رفتار دستیار،
 // ابزارها و سقف مصرف در هر دو جا دقیقاً یکی باشد و دو منطق موازی نگه نداریم.
 async function runAssistant(shop, { message, history, page }) {
-  const systemPrompt = buildSystemPrompt(shop, page, message);
-
-  // تاریخچه از سمت کلاینت می‌آید، پس هم تعدادش و هم طول هر پیام محدود می‌شود
+  // تاریخچه ممکن است از سمت کلاینت بیاید، پس هم تعدادش و هم طول هر پیام محدود می‌شود.
+  // کارت‌های محصولی که قبلاً نشان داده شده به متن پیام دستیار چسبانده می‌شود؛ بدون این، مدل
+  // در پیام بعدی نمی‌دانست مشتری چه محصولاتی جلوی چشمش دارد («جنس این دو تا یکیه؟»).
   const trimmedHistory = (Array.isArray(history) ? history : [])
     .slice(-10)
-    .filter(h => h && typeof h.text === 'string')
-    .map(h => ({
-      role: h.role === 'assistant' ? 'assistant' : 'user',
-      content: h.text.slice(0, 2000)
-    }));
+    .filter(h => h && typeof h.text === 'string' && h.text.trim())
+    .map(h => {
+      let content = h.text.slice(0, 2000);
+      if (h.role === 'agent') content = `(پاسخ کارشناس انسانی فروشگاه) ${content}`;
+      if (Array.isArray(h.products) && h.products.length) {
+        const titles = h.products.slice(0, 4)
+          .map(p => `${String(p.title || '').slice(0, 120)}${p.price != null ? ` - ${p.price} تومان` : ''}`);
+        content += `\n(کارت محصولاتی که زیر این پیام به مشتری نشان داده شد: ${titles.join(' | ')})`;
+      }
+      return { role: h.role === 'user' ? 'user' : 'assistant', content };
+    });
+
+  const prevUser = [...trimmedHistory].reverse().find(h => h.role === 'user');
+  const systemPrompt = buildSystemPrompt(shop, page, message, prevUser ? prevUser.content : '');
 
   const messages = [
     { role: 'system', content: systemPrompt },
@@ -2289,6 +2366,16 @@ async function runAssistant(shop, { message, history, page }) {
 
 // ==================== اندپوینت اصلی چت (ویجت وب) ====================
 
+// مشخصات فرم شروع گفتگو: نام کوتاه و شماره موبایل ایرانی. هر چیز نامعتبر دور ریخته می‌شود.
+function cleanVisitor(v) {
+  if (!v || typeof v !== 'object') return null;
+  const name = typeof v.name === 'string' ? v.name.replace(/\s+/g, ' ').trim().slice(0, 60) : '';
+  let phone = typeof v.phone === 'string' ? normalizeIranPhone(v.phone) : '';
+  if (!/^09\d{9}$/.test(phone)) phone = '';
+  if (!name && !phone) return null;
+  return { name, phone };
+}
+
 app.post('/api/chat', chatLimiter, async (req, res) => {
   const { history, siteKey, sessionId, pageUrl, page } = req.body;
 
@@ -2310,12 +2397,17 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
     ? sessionId
     : 'anon_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 
+  // مشخصات فرم شروع گفتگو (اگر فروشنده فرم را فعال کرده). ویجت آن را همراه هر پیام می‌فرستد
+  // و روی گفتگو ذخیره می‌شود تا در پنل و اعلان تلگرام دیده شود.
+  const visitor = cleanVisitor(req.body.visitor);
+
   // اگر کارشناس انسانی همین حالا این گفتگو را در دست دارد، دستیار ساکت می‌ماند: پیام مشتری
   // فقط ثبت و به فروشنده اعلام می‌شود تا خودش جواب بدهد و مشتری دو جواب موازی نگیرد.
   if (isAgentActive(shop.id, sid)) {
     let convId = null;
     try {
       convId = logCustomerMessage(shop.id, sid, typeof pageUrl === 'string' ? pageUrl.slice(0, 500) : null, message.slice(0, 4000));
+      if (visitor) setConversationCustomer(convId, visitor.name, visitor.phone);
     } catch (e) {
       console.error('خطای ثبت پیام مشتری در حالت کارشناس:', e?.message || e);
     }
@@ -2347,7 +2439,12 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
   }
 
   try {
-    const out = await runAssistant(shop, { message, history, page });
+    // تاریخچه‌ی ثبت‌شده در دیتابیس بر تاریخچه‌ی ارسالی ویجت اولویت دارد: محصولات نمایش‌داده‌شده
+    // و جواب‌های کارشناس را هم دارد و مشتری نمی‌تواند دستکاری‌اش کند. ویجت‌های قدیمی بدون
+    // sessionId هنوز از تاریخچه‌ی خودشان استفاده می‌کنند.
+    let convHistory = [];
+    try { convHistory = getRecentMessages(shop.id, sid, 10); } catch (e) { console.error('خطای خواندن تاریخچه:', e.message); }
+    const out = await runAssistant(shop, { message, history: convHistory.length ? convHistory : history, page });
 
     // ثبت گفتگو برای نمایش در پنل فروشگاه. ویجت‌های قدیمی که sessionId نمی‌فرستن،
     // هر پیامشون یک گفتگوی جدا می‌شه. خطای ثبت نباید جواب مشتری رو خراب کنه.
@@ -2355,6 +2452,7 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
     try {
       conversationId = logExchange(shop.id, sid, typeof pageUrl === 'string' ? pageUrl.slice(0, 500) : null,
         message.slice(0, 4000), out.reply.slice(0, 8000), out.products, !!out.handoff);
+      if (visitor) setConversationCustomer(conversationId, visitor.name, visitor.phone);
     } catch (logErr) {
       console.error('خطای ثبت گفتگو:', logErr?.message || logErr);
     }
@@ -2387,6 +2485,25 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
 // ویجت مشتری هر چند ثانیه این را می‌پرسد تا پاسخ‌های کارشناس انسانی را تحویل بگیرد.
 // نیازی به احراز هویت ندارد چون sessionId یک شناسه‌ی تصادفی ۹۶ بیتی است که فقط خود
 // مرورگر مشتری دارد؛ ولی عمداً فقط پیام‌های نقش 'agent' برگردانده می‌شود، نه کل گفتگو.
+// تنظیمات رفتاری ویجت (فرم شروع گفتگو، پیام خودکار). ویجت موقع لود این را می‌گیرد تا
+// تغییرات پنل بدون عوض کردن کد نصب روی سایت فروشگاه اعمال شود. فقط چیزهایی برمی‌گردد
+// که به‌هرحال به بازدیدکننده نشان داده می‌شود.
+app.get('/api/chat/config', apiLimiter, (req, res) => {
+  const shop = typeof req.query.siteKey === 'string' ? getShopBySiteKey(req.query.siteKey) : null;
+  if (!shop) return res.status(404).json({ error: 'فروشگاهی با این کلید پیدا نشد.' });
+  const autoText = (shop.auto_message_text || '').trim();
+  res.set('Cache-Control', 'public, max-age=60');
+  res.json({
+    prechatForm: !!shop.prechat_form_enabled,
+    autoMessage: shop.auto_message_enabled && autoText ? {
+      text: autoText,
+      delay: shop.auto_message_delay ?? 20,
+      frequency: shop.auto_message_frequency === 'once' ? 'once' : 'always',
+      open: !!shop.auto_message_open
+    } : null
+  });
+});
+
 app.get('/api/chat/agent-messages', apiLimiter, (req, res) => {
   const { siteKey, sessionId } = req.query;
   if (!siteKey || typeof sessionId !== 'string' || !/^[\w-]{6,64}$/.test(sessionId)) {

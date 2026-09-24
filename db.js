@@ -44,6 +44,13 @@ db.exec(`
     support_link TEXT DEFAULT '',
     support_hours TEXT DEFAULT '',
 
+    prechat_form_enabled INTEGER DEFAULT 0,
+    auto_message_enabled INTEGER DEFAULT 0,
+    auto_message_text TEXT DEFAULT '',
+    auto_message_delay INTEGER DEFAULT 20,
+    auto_message_frequency TEXT DEFAULT 'always',
+    auto_message_open INTEGER DEFAULT 0,
+
     phone TEXT,
     phone_verified_at TEXT,
     owner_first_name TEXT DEFAULT '',
@@ -75,6 +82,12 @@ const migrations = {
   support_phone: "ALTER TABLE shops ADD COLUMN support_phone TEXT DEFAULT ''",
   support_link: "ALTER TABLE shops ADD COLUMN support_link TEXT DEFAULT ''",
   support_hours: "ALTER TABLE shops ADD COLUMN support_hours TEXT DEFAULT ''",
+  prechat_form_enabled: "ALTER TABLE shops ADD COLUMN prechat_form_enabled INTEGER DEFAULT 0",
+  auto_message_enabled: "ALTER TABLE shops ADD COLUMN auto_message_enabled INTEGER DEFAULT 0",
+  auto_message_text: "ALTER TABLE shops ADD COLUMN auto_message_text TEXT DEFAULT ''",
+  auto_message_delay: "ALTER TABLE shops ADD COLUMN auto_message_delay INTEGER DEFAULT 20",
+  auto_message_frequency: "ALTER TABLE shops ADD COLUMN auto_message_frequency TEXT DEFAULT 'always'",
+  auto_message_open: "ALTER TABLE shops ADD COLUMN auto_message_open INTEGER DEFAULT 0",
   phone: "ALTER TABLE shops ADD COLUMN phone TEXT",
   phone_verified_at: "ALTER TABLE shops ADD COLUMN phone_verified_at TEXT",
   owner_first_name: "ALTER TABLE shops ADD COLUMN owner_first_name TEXT DEFAULT ''",
@@ -138,6 +151,8 @@ db.exec(`
     preview TEXT DEFAULT '',
     needs_agent INTEGER DEFAULT 0,
     handled_at TEXT,
+    customer_name TEXT,
+    customer_phone TEXT,
     started_at TEXT DEFAULT (datetime('now')),
     last_message_at TEXT DEFAULT (datetime('now')),
     UNIQUE(shop_id, session_id)
@@ -162,6 +177,9 @@ db.exec(`
   if (!convColumns.includes('handled_at')) db.exec('ALTER TABLE conversations ADD COLUMN handled_at TEXT');
   // تا این زمان، کارشناس گفتگو را در دست دارد و دستیار هوش مصنوعی در این مکالمه ساکت می‌ماند
   if (!convColumns.includes('agent_until')) db.exec('ALTER TABLE conversations ADD COLUMN agent_until TEXT');
+  // مشخصاتی که مشتری در «فرم شروع گفتگو»ی ویجت وارد کرده (اگر فروشنده فرم را فعال کرده باشد)
+  if (!convColumns.includes('customer_name')) db.exec('ALTER TABLE conversations ADD COLUMN customer_name TEXT');
+  if (!convColumns.includes('customer_phone')) db.exec('ALTER TABLE conversations ADD COLUMN customer_phone TEXT');
 }
 
 // گفتگوهای تلگرام: هر ردیف یعنی یک مشتری که با ربات تلگرامِ یک فروشگاه حرف می‌زند.
@@ -295,7 +313,8 @@ function getShopBySiteKey(siteKey) {
   return db.prepare('SELECT * FROM shops WHERE site_key = ?').get(siteKey);
 }
 
-function updateShopSettings(id, { shop_name, shipping_policy, returns_policy, warranty_policy, theme_color, widget_side, desktop_bottom, desktop_side_offset, mobile_bottom, mobile_side_offset, support_phone, support_link, support_hours }) {
+function updateShopSettings(id, { shop_name, shipping_policy, returns_policy, warranty_policy, theme_color, widget_side, desktop_bottom, desktop_side_offset, mobile_bottom, mobile_side_offset, support_phone, support_link, support_hours,
+  prechat_form_enabled, auto_message_enabled, auto_message_text, auto_message_delay, auto_message_frequency, auto_message_open }) {
   db.prepare(`
     UPDATE shops SET
       shop_name = COALESCE(?, shop_name),
@@ -310,7 +329,13 @@ function updateShopSettings(id, { shop_name, shipping_policy, returns_policy, wa
       mobile_side_offset = COALESCE(?, mobile_side_offset),
       support_phone = COALESCE(?, support_phone),
       support_link = COALESCE(?, support_link),
-      support_hours = COALESCE(?, support_hours)
+      support_hours = COALESCE(?, support_hours),
+      prechat_form_enabled = COALESCE(?, prechat_form_enabled),
+      auto_message_enabled = COALESCE(?, auto_message_enabled),
+      auto_message_text = COALESCE(?, auto_message_text),
+      auto_message_delay = COALESCE(?, auto_message_delay),
+      auto_message_frequency = COALESCE(?, auto_message_frequency),
+      auto_message_open = COALESCE(?, auto_message_open)
     WHERE id = ?
   `).run(
     shop_name ?? null,
@@ -326,6 +351,12 @@ function updateShopSettings(id, { shop_name, shipping_policy, returns_policy, wa
     support_phone ?? null,
     support_link ?? null,
     support_hours ?? null,
+    prechat_form_enabled ?? null,
+    auto_message_enabled ?? null,
+    auto_message_text ?? null,
+    auto_message_delay ?? null,
+    auto_message_frequency ?? null,
+    auto_message_open ?? null,
     id
   );
   return getShopById(id);
@@ -553,6 +584,36 @@ function getAgentMessagesAfter(shopId, sessionId, afterId) {
   return { items, agentActive };
 }
 
+// پیام‌های اخیر یک گفتگو برای حافظه‌ی دستیار، به ترتیب زمانی. برخلاف تاریخچه‌ی ارسالی ویجت،
+// محصولاتی که به مشتری نشان داده شده و جواب‌های کارشناس هم اینجا هست. پیام‌های قدیمی‌تر از
+// maxAgeHours کنار گذاشته می‌شوند تا گفتگوی دیروز مشتری تلگرام قاطی سوال امروزش نشود.
+function getRecentMessages(shopId, sessionId, limit = 10, maxAgeHours = 6) {
+  const conv = db.prepare('SELECT id FROM conversations WHERE shop_id = ? AND session_id = ?').get(shopId, sessionId);
+  if (!conv) return [];
+  return db.prepare(`
+    SELECT role, content, products_json FROM messages
+    WHERE conversation_id = ? AND created_at >= datetime('now', ?)
+    ORDER BY id DESC LIMIT ?
+  `).all(conv.id, `-${Number(maxAgeHours) || 6} hours`, limit).reverse()
+    .map(m => {
+      let products = null;
+      try { products = m.products_json ? JSON.parse(m.products_json) : null; } catch (e) { products = null; }
+      return { role: m.role, text: m.content, products };
+    });
+}
+
+// ثبت مشخصات فرم شروع گفتگو روی گفتگو. فقط مقدار غیرخالی جایگزین می‌شود تا یک درخواست
+// بدون مشخصات، نام ثبت‌شده را پاک نکند.
+function setConversationCustomer(conversationId, name, phone) {
+  if (!conversationId || (!name && !phone)) return;
+  db.prepare(`
+    UPDATE conversations SET
+      customer_name = COALESCE(NULLIF(?, ''), customer_name),
+      customer_phone = COALESCE(NULLIF(?, ''), customer_phone)
+    WHERE id = ?
+  `).run(name || '', phone || '', conversationId);
+}
+
 function getConversationBySession(shopId, sessionId) {
   return db.prepare('SELECT * FROM conversations WHERE shop_id = ? AND session_id = ?').get(shopId, sessionId) || null;
 }
@@ -597,7 +658,7 @@ function listConversations(shopId, { q = '', limit = 30, offset = 0, filter = ''
   const total = db.prepare(`SELECT COUNT(*) AS n FROM conversations c WHERE ${where}`).get(...params).n;
   const items = db.prepare(`
     SELECT c.id, c.session_id, c.page_url, c.message_count, c.preview, c.started_at, c.last_message_at,
-           c.needs_agent, c.handled_at
+           c.needs_agent, c.handled_at, c.customer_name, c.customer_phone
     FROM conversations c
     WHERE ${where}
     ORDER BY c.last_message_at DESC, c.id DESC
@@ -1083,6 +1144,12 @@ function toPublicShop(shop) {
     support_phone: shop.support_phone || '',
     support_link: shop.support_link || '',
     support_hours: shop.support_hours || '',
+    prechat_form_enabled: !!shop.prechat_form_enabled,
+    auto_message_enabled: !!shop.auto_message_enabled,
+    auto_message_text: shop.auto_message_text || '',
+    auto_message_delay: shop.auto_message_delay ?? 20,
+    auto_message_frequency: shop.auto_message_frequency === 'once' ? 'once' : 'always',
+    auto_message_open: !!shop.auto_message_open,
     phone: shop.phone || '',
     phone_verified: !!shop.phone_verified_at,
     owner_name: shop.owner_name || '',
@@ -1122,6 +1189,8 @@ module.exports = {
   isAgentActive,
   endAgentSession,
   getAgentMessagesAfter,
+  getRecentMessages,
+  setConversationCustomer,
   getConversationBySession,
   listConversations,
   markConversationHandled,

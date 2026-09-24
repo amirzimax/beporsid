@@ -57,20 +57,35 @@ function normalizeFa(s) {
     .trim();
 }
 
-const STOPWORDS = new Set(('از به در که را با این آن و است برای تا هم یا من شما چه چی چطور چگونه آیا میشه می شه هست هستم هستید دارید داره دارم داری دارین کنید کنم کنه کرد کردم بود باشه باشد باید نه بله سلام لطفا لطفاً خب خوب یه یک یکی رو ی ها های و اگه اگر ولی اما چون وقتی کجا کی چند چقدر چیه چیست بگو بگید بده بدید میخوام می خوام میخواستم').split(' '));
+const STOPWORDS = new Set(('از به در که را با این آن و است برای تا هم یا من شما چه چی چطور چگونه آیا میشه می شه هست هستم هستید دارید داره دارم داری دارین کنید کنم کنه کرد کردم بود باشه باشد باید نه بله سلام لطفا لطفاً خب خوب یه یک یکی رو ی ها های و اگه اگر ولی اما چون وقتی کجا کی چند چقدر چیه چیست بگو بگید بده بدید میخوام می خوام میخواستم بعد پس چجوری چطوری چطور چقدره چیه اینو همین اون میتونم میشه').split(' '));
 
 // عبارت FTS5 از روی پیام مشتری: هر کلمه‌ی معنی‌دار یک term، با OR کنار هم تا هر تطابقی بیاد؛
 // کلمات ۴ حرفی به بالا با prefix تا «قاب‌ها» و «قاب» هم به هم برسن. bm25 بعداً بهترین‌ها رو جلو می‌آره.
+// پسوندهای محاوره‌ای فارسی. جست‌وجوی prefix فقط یک طرفه است: «ارسالش*» متنی را که «ارسال»
+// دارد پیدا نمی‌کند، پس ریشه‌ی بدون پسوند هم جداگانه جست‌وجو می‌شود. ترتیب از بلند به کوتاه.
+const FA_SUFFIXES = ['هایشان', 'هاشون', 'هایش', 'هاتون', 'هاش', 'های', 'ها', 'شون', 'تون', 'مون', 'شان', 'تان', 'مان', 'یش', 'اش', 'ش', 'ی'];
+function stripFaSuffix(t) {
+  if (!/[؀-ۿ]/.test(t)) return t;
+  for (const s of FA_SUFFIXES) {
+    if (t.endsWith(s) && t.length - s.length >= 3) return t.slice(0, -s.length);
+  }
+  return t;
+}
+
 function buildFtsQuery(text) {
   const tokens = normalizeFa(text).toLowerCase()
     .split(/[^\p{L}\p{N}]+/u)
     .filter(t => t.length >= 2 && !STOPWORDS.has(t));
   const uniq = [...new Set(tokens)].slice(0, 12);
   if (!uniq.length) return null;
-  return uniq.map(t => {
+  const terms = new Set();
+  for (const t of uniq) {
     const safe = t.replace(/"/g, '');
-    return safe.length >= 4 ? `"${safe}"*` : `"${safe}"`;
-  }).join(' OR ');
+    terms.add(safe.length >= 4 ? `"${safe}"*` : `"${safe}"`);
+    const stem = stripFaSuffix(safe);
+    if (stem !== safe) terms.add(`"${stem}"*`);
+  }
+  return [...terms].join(' OR ');
 }
 
 // --- تکه‌کردن متن: بر اساس پاراگراف، هر تکه حداکثر ~۹۰۰ کاراکتر ---

@@ -319,6 +319,16 @@
   .side-toggle .mini { width: 34px; height: 22px; border: 1.5px solid currentColor; border-radius: 5px; position: relative; opacity: .7; }
   .side-toggle .mini::after { content: ''; position: absolute; bottom: 2px; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
   .side-toggle .mini.l::after { left: 2px; } .side-toggle .mini.r::after { right: 2px; }
+  .choice-list { display: grid; gap: 10px; }
+  .choice-list input { display: none; }
+  .choice-list label { margin: 0; cursor: pointer; border: 1.5px solid var(--line); border-radius: 10px; padding: 11px 14px; display: flex; align-items: center; gap: 10px; font-weight: 500; transition: all .12s; }
+  .choice-list label::before { content: ''; flex: none; width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--line); background: var(--card); box-sizing: border-box; transition: all .12s; }
+  .choice-list input:checked + label { border-color: var(--firooze); background: var(--firooze-mist); color: var(--firooze-deep); font-weight: 700; }
+  .choice-list input:checked + label::before { border: 5px solid var(--firooze); }
+  .choice-list.inline { grid-template-columns: 1fr 1fr; }
+  .am-fields.off { opacity: .45; pointer-events: none; }
+  .delay-row { display: flex; align-items: center; gap: 10px; }
+  .delay-row input { width: 110px; }
   .hint { display: flex; gap: 10px; align-items: flex-start; background: var(--saffron-mist); border: 1px solid var(--warn-line); color: var(--warn-text); border-radius: 12px; padding: 12px 14px; font-size: 13px; margin-top: 16px; }
   .hint svg { flex: none; margin-top: 3px; }
 
@@ -1153,6 +1163,72 @@
         </div>
       </section>
 
+      <!-- ========== ENGAGEMENT (فرم شروع گفتگو و پیام خودکار) ========== -->
+      <section class="section" data-section="engagement">
+        <div class="topbar"><div><h1>شروع گفتگو و پیام خودکار</h1><p class="muted">این تنظیمات بدون نیاز به تغییر کد نصب، حداکثر تا یک دقیقه بعد روی سایت اعمال می‌شوند.</p></div></div>
+
+        <div class="card">
+          <div class="card-head"><div><h2>فرم شروع گفتگو</h2><p class="muted">قبل از شروع گفتگو، بازدیدکننده باید چه کاری انجام دهد؟</p></div></div>
+          <div class="field">
+            <div class="choice-list">
+              <input type="radio" name="prechat_r" id="prechat-off" value="0">
+              <label for="prechat-off">نیاز به انجام کار خاصی نیست.</label>
+              <input type="radio" name="prechat_r" id="prechat-on" value="1">
+              <label for="prechat-on">کاربر باید قبل از شروع گفتگو فرم مشخصات را تکمیل کند.</label>
+            </div>
+          </div>
+          <p class="fine">فرم مشخصات، نام و شماره موبایل بازدیدکننده را می‌پرسد. این مشخصات کنار گفتگو در بخش «گفتگوها» و در اعلان تلگرام نمایش داده می‌شود و بازدیدکننده‌ی برگشتی دوباره فرم را نمی‌بیند.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h2>پیام خودکار</h2><p class="muted">چند ثانیه بعد از ورود بازدیدکننده، یک پیام خوش‌آمد به او نشان داده می‌شود.</p></div></div>
+          <div class="field">
+            <div class="choice-list inline">
+              <input type="radio" name="am_enabled_r" id="am-off" value="0" onchange="autoMsgChanged()">
+              <label for="am-off">غیرفعال</label>
+              <input type="radio" name="am_enabled_r" id="am-on" value="1" onchange="autoMsgChanged()">
+              <label for="am-on">فعال</label>
+            </div>
+          </div>
+          <div class="am-fields" id="am-fields">
+            <div class="field">
+              <label for="auto_message_text">متن پیام</label>
+              <textarea id="auto_message_text" maxlength="300" placeholder="سلام. اگر سوالی دارید در خدمت شما هستیم..."></textarea>
+            </div>
+            <div class="field">
+              <label for="auto_message_delay">نمایش بعد از</label>
+              <div class="delay-row">
+                <input type="number" id="auto_message_delay" min="0" max="600" dir="ltr" />
+                <span>ثانیه</span>
+              </div>
+            </div>
+            <div class="field">
+              <label>تعداد نمایش</label>
+              <div class="choice-list inline">
+                <input type="radio" name="am_freq_r" id="am-freq-always" value="always">
+                <label for="am-freq-always">همیشه در هر بازدید</label>
+                <input type="radio" name="am_freq_r" id="am-freq-once" value="once">
+                <label for="am-freq-once">فقط یک‌بار</label>
+              </div>
+            </div>
+            <div class="field">
+              <label>باز شدن ابزارک</label>
+              <div class="choice-list inline">
+                <input type="radio" name="am_open_r" id="am-open-yes" value="1">
+                <label for="am-open-yes">ابزارک به‌طور کامل باز شود</label>
+                <input type="radio" name="am_open_r" id="am-open-no" value="0">
+                <label for="am-open-no">نیاز نیست</label>
+              </div>
+              <p class="fine" style="margin-top:8px">با «نیاز نیست»، پیام به شکل یک کادر کوچک بالای حباب چت نمایش داده می‌شود و با کلیک روی آن گفتگو باز می‌شود. در موبایل، «باز شدن کامل» کل صفحه را می‌پوشاند.</p>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" onclick="saveEngagement(this)">ذخیره</button>
+            <div id="engagement-status" class="status"></div>
+          </div>
+        </div>
+      </section>
+
       <!-- ========== APPEARANCE ========== -->
       <section class="section" data-section="appearance">
         <div class="topbar"><div><h1>ظاهر و جای‌گیری</h1><p class="muted">اگر حباب چت روی منو یا دکمه‌ای از سایتتان می‌افتد، از اینجا جابه‌جایش کنید.</p></div></div>
@@ -1566,7 +1642,8 @@
     { id: 'shop',       label: 'اطلاعات فروشگاه' },
     { id: 'store',      label: 'اتصال فروشگاه' },
     { id: 'telegram',   label: 'ربات تلگرام' },
-    { id: 'appearance', label: 'ظاهر و جای‌گیری' }
+    { id: 'appearance', label: 'ظاهر و جای‌گیری' },
+    { id: 'engagement', label: 'شروع گفتگو' }
   ];
   const isSettingsTab = id => SETTINGS_TABS.some(t => t.id === id);
 
@@ -1782,6 +1859,14 @@
     $('support_link').value = s.support_link || '';
     $('support_hours').value = s.support_hours || '';
 
+    $(s.prechat_form_enabled ? 'prechat-on' : 'prechat-off').checked = true;
+    $(s.auto_message_enabled ? 'am-on' : 'am-off').checked = true;
+    $('auto_message_text').value = s.auto_message_text || '';
+    $('auto_message_delay').value = s.auto_message_delay ?? 20;
+    $(s.auto_message_frequency === 'once' ? 'am-freq-once' : 'am-freq-always').checked = true;
+    $(s.auto_message_open ? 'am-open-yes' : 'am-open-no').checked = true;
+    autoMsgChanged();
+
     $('shopfa_site_domain').value = s.shopfa_site_domain || '';
     $('shopfa_username').value = s.shopfa_username || '';
     $('woo_site_domain').value = s.woo_site_domain || '';
@@ -1880,7 +1965,8 @@
     if (!url) return '';
     try { const u = new URL(url); return u.hostname + (u.pathname.length > 1 ? u.pathname : ''); } catch (_) { return url; }
   }
-  function visitorLabel(c) { return 'بازدیدکننده ' + fa(String(c.id)); }
+  // اگر مشتری فرم شروع گفتگو را پر کرده، نامش به‌جای «بازدیدکننده N» نمایش داده می‌شود
+  function visitorLabel(c) { return c.customer_name || ('بازدیدکننده ' + fa(String(c.id))); }
 
   function convSearchChanged() {
     clearTimeout(convState.searchTimer);
@@ -1962,7 +2048,7 @@
             <button class="btn btn-ghost back" onclick="closeConversation()" aria-label="بازگشت" style="padding:6px">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
             </button>
-            <div class="t"><b>${esc(visitorLabel(c))}</b><span title="${esc(c.page_url || '')}">${esc(fullTime(c.started_at))}${c.page_url ? ' · ' + esc(pageLabel(c.page_url)) : ''}</span></div>
+            <div class="t"><b>${esc(visitorLabel(c))}${c.customer_phone ? ` <a href="tel:${esc(c.customer_phone)}" dir="ltr" style="font-weight:500;font-size:12.5px;color:var(--firooze-deep);text-decoration:none">${esc(fa(c.customer_phone))}</a>` : ''}</b><span title="${esc(c.page_url || '')}">${esc(fullTime(c.started_at))}${c.page_url ? ' · ' + esc(pageLabel(c.page_url)) : ''}</span></div>
           </div>
           <div style="display:flex;gap:8px;flex:none">
             ${isPending(c)
@@ -2184,7 +2270,13 @@
       desktop_bottom: $('desktop_bottom').value,
       desktop_side_offset: $('desktop_side_offset').value,
       mobile_bottom: $('mobile_bottom').value,
-      mobile_side_offset: $('mobile_side_offset').value
+      mobile_side_offset: $('mobile_side_offset').value,
+      prechat_form_enabled: $('prechat-on').checked,
+      auto_message_enabled: $('am-on').checked,
+      auto_message_text: $('auto_message_text').value,
+      auto_message_delay: $('auto_message_delay').value,
+      auto_message_frequency: $('am-freq-once').checked ? 'once' : 'always',
+      auto_message_open: $('am-open-yes').checked
     };
     busy(btn, true); setStatus(statusId, '');
     try {
@@ -2194,6 +2286,25 @@
       toast('تغییرات ذخیره شد');
     } catch (e) { setStatus(statusId, e.message === 'Failed to fetch' ? 'خطا در ارتباط با سرور.' : e.message, 'error'); toast('ذخیره نشد', 'err'); }
     finally { busy(btn, false); }
+  }
+
+  // فیلدهای پیام خودکار فقط وقتی فعال است قابل ویرایش‌اند
+  function autoMsgChanged() {
+    $('am-fields').classList.toggle('off', !$('am-on').checked);
+  }
+
+  async function saveEngagement(btn) {
+    if ($('am-on').checked && !$('auto_message_text').value.trim()) {
+      setStatus('engagement-status', 'برای فعال کردن پیام خودکار، متن پیام را بنویسید.', 'error');
+      $('auto_message_text').focus();
+      return;
+    }
+    const d = Number($('auto_message_delay').value);
+    if ($('am-on').checked && (!Number.isFinite(d) || d < 0 || d > 600)) {
+      setStatus('engagement-status', 'زمان نمایش باید بین ۰ تا ۶۰۰ ثانیه باشد.', 'error');
+      return;
+    }
+    await saveSettings('engagement-status', btn);
   }
 
   async function saveShopfa(btn) {

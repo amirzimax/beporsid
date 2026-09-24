@@ -52,6 +52,9 @@
   // آدرس دریافت پاسخ کارشناس انسانی، از روی همان apiUrl ساخته می‌شود تا نیازی نباشد
   // مشتری‌های قبلی کد نصبشان را عوض کنند (.../api/chat → .../api/chat/agent-messages)
   const AGENT_POLL_URL = API_URL.replace(/\/+$/, '') + '/agent-messages';
+  // تنظیمات رفتاری (فرم شروع گفتگو، پیام خودکار) از سرور خوانده می‌شود تا تغییرات پنل
+  // بدون عوض کردن کد نصب اعمال شود
+  const CONFIG_URL = API_URL.replace(/\/+$/, '') + '/config';
 
   const STORAGE_KEY = 'beporsidChatbotState:' + SITE_KEY;
   const FONT_FAMILY = (window.ChatbotWidgetConfig && window.ChatbotWidgetConfig.fontFamily) || 'Vazirmatn';
@@ -458,6 +461,75 @@
       .hd-btn.primary:hover { background: ${THEME_COLOR}; opacity: .9; }
       .hd-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 
+      /* ---------- فرم شروع گفتگو ---------- */
+      .panel.form-mode .input-row { display: none; }
+      .prechat {
+        align-self: stretch;
+        background: #fff;
+        border-radius: 16px;
+        padding: 14px;
+        margin: 6px 0 8px;
+        box-shadow: 0 1px 2px rgba(15,23,42,0.06);
+        animation: rise 0.25s ease;
+      }
+      .prechat .pc-head { font-weight: 700; font-size: 13.5px; color: #1f2430; margin-bottom: 4px; }
+      .prechat .pc-sub { font-size: 12px; color: #6b7280; line-height: 1.7; margin-bottom: 10px; }
+      .prechat label { display: block; font-size: 12px; color: #4a5160; margin: 8px 0 4px; }
+      .prechat input {
+        width: 100%;
+        border: 1.5px solid #e3e6ec;
+        background: #f7f8fa;
+        border-radius: 12px;
+        padding: 9px 12px;
+        outline: none;
+        font-size: 16px;
+        color: #1f2430;
+        transition: border-color 0.15s, background 0.15s;
+      }
+      .prechat input:focus { border-color: ${THEME_COLOR}; background: #fff; }
+      .prechat input.ltr { direction: ltr; text-align: right; }
+      .prechat .pc-err { color: #c53030; font-size: 12px; min-height: 18px; margin-top: 6px; }
+      .prechat button {
+        width: 100%; margin-top: 4px; padding: 10px; border: 0; border-radius: 12px;
+        background: ${THEME_COLOR}; color: #fff; font-size: 14px; font-weight: 700; cursor: pointer;
+        font-family: inherit; transition: opacity 0.15s;
+      }
+      .prechat button:hover { opacity: .9; }
+
+      /* ---------- پیام خودکار (بالای حباب، وقتی ابزارک باز نمی‌شود) ---------- */
+      .teaser {
+        pointer-events: auto;
+        position: fixed;
+        bottom: calc(${POS.dBottom + 70}px + env(safe-area-inset-bottom));
+        ${SIDE}: ${POS.dSide}px;
+        max-width: min(280px, calc(100vw - 32px));
+        background: #fff;
+        color: #1f2430;
+        border-radius: 16px;
+        border-bottom-${SIDE}-radius: 5px;
+        padding: 12px 14px 12px 34px;
+        box-shadow: 0 14px 34px -10px rgba(15, 23, 42, 0.3), 0 0 0 1px rgba(15,23,42,0.06);
+        font-size: 13.5px;
+        line-height: 1.7;
+        direction: rtl;
+        white-space: pre-wrap;
+        word-break: break-word;
+        cursor: pointer;
+        display: none;
+        z-index: 2147483000;
+      }
+      .teaser.show { display: block; animation: rise 0.3s ease; }
+      .teaser .tz-close {
+        position: absolute; top: 6px; left: 6px;
+        width: 24px; height: 24px; border: 0; border-radius: 8px; padding: 0;
+        background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      }
+      .teaser .tz-close:hover { background: #f1f2f5; }
+      .teaser .tz-close svg { width: 12px; height: 12px; stroke: #7c8494; stroke-width: 2.4; fill: none; stroke-linecap: round; }
+      @media (max-width: 560px) {
+        .teaser { ${SIDE}: ${POS.mSide}px; bottom: calc(${POS.mBottom + 70}px + env(safe-area-inset-bottom)); }
+      }
+
       .msg-link { color: ${THEME_COLOR}; text-decoration: underline; word-break: break-all; }
       .msg.user .msg-link { color: #fff; }
     </style>
@@ -467,6 +539,11 @@
       <span class="ic-chat">${CHAT_ICON}</span>
       <svg class="ic-close" viewBox="0 0 24 24"><path d="M18.3 5.7a1 1 0 0 0-1.4 0L12 10.6 7.1 5.7a1 1 0 0 0-1.4 1.4l4.9 4.9-4.9 4.9a1 1 0 1 0 1.4 1.4l4.9-4.9 4.9 4.9a1 1 0 0 0 1.4-1.4L13.4 12l4.9-4.9a1 1 0 0 0 0-1.4z"/></svg>
     </button>
+
+    <div class="teaser" id="teaser" role="status">
+      <button class="tz-close" id="teaserClose" aria-label="بستن"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      <span id="teaserText"></span>
+    </div>
 
     <div class="panel" id="panel" role="dialog" aria-label="گفتگو با دستیار فروشگاه">
       <div class="header">
@@ -500,6 +577,9 @@
   const messagesEl = shadow.getElementById('messages');
   const inputEl = shadow.getElementById('userInput');
   const sendBtn = shadow.getElementById('sendBtn');
+  const teaserEl = shadow.getElementById('teaser');
+  const teaserTextEl = shadow.getElementById('teaserText');
+  const teaserCloseBtn = shadow.getElementById('teaserClose');
 
   // تشخیص موبایل بودن با ترکیب دو سیگنال: عرض واقعی صفحه‌ی دستگاه (screen.width) که
   // تحت‌تأثیر تنظیمات viewport اون صفحه‌ی خاص قرار نمی‌گیره، به‌علاوه‌ی media query عادی -
@@ -520,6 +600,15 @@
   let agentActive = false;       // کارشناس گفتگو را در دست دارد
   let pollTimer = null;
   let conversationStarted = false; // تا مشتری پیامی نفرستاده، گفتگویی روی سرور وجود ندارد
+  // --- فرم شروع گفتگو و پیام خودکار (تنظیمات از سرور می‌آید) ---
+  let widgetConfig = null;       // تا وقتی از سرور نیامده، نه فرمی نشان داده می‌شود نه پیام خودکاری
+  let greetingOverride = '';     // اگر پیام خودکار نشان داده شده، اولین پیام پنل همان است
+  let autoMsgTimer = null;
+  const VISITOR_KEY = 'beporsidVisitor:' + SITE_KEY;
+  const AUTO_ONCE_KEY = 'beporsidAutoMsgShown:' + SITE_KEY;
+  // مشخصات فرم در localStorage می‌ماند تا بازدیدکننده‌ی برگشتی دوباره فرم پر نکند
+  let visitor = null;
+  try { visitor = JSON.parse(localStorage.getItem(VISITOR_KEY) || 'null'); } catch (e) { visitor = null; }
 
   // شناسه‌ی یکتای این گفتگو؛ سرور با همین شناسه پیام‌ها رو در یک مکالمه جمع می‌کنه
   // تا صاحب فروشگاه بتونه در پنل مدیریت گفتگوها رو ببینه
@@ -643,10 +732,13 @@
     bubble.classList.toggle('open', opened);
     saveState();
     if (opened) {
+      hideTeaser();
+      if (autoMsgTimer) { clearTimeout(autoMsgTimer); autoMsgTimer = null; }
       if (messagesEl.children.length === 0) {
-        addMessage(greetingText(), 'bot');
+        addMessage(greetingOverride || greetingText(), 'bot');
       }
-      if (!isMobileDevice) inputEl.focus();
+      maybeShowPrechatForm();
+      if (!isMobileDevice && !panel.classList.contains('form-mode')) inputEl.focus();
       scrollToBottom();
       startPolling();   // تا پنل باز است، جواب کارشناس را زنده تحویل می‌گیریم
     } else {
@@ -655,6 +747,123 @@
   }
   bubble.addEventListener('click', () => setOpen(!opened));
   closeBtn.addEventListener('click', () => setOpen(false));
+
+  // ---------- فرم شروع گفتگو ----------
+  // اگر فروشنده فرم را فعال کرده باشد، تا بازدیدکننده نام و موبایلش را وارد نکند، کادر
+  // نوشتن پیام پنهان می‌ماند. گفتگویی که از قبل شروع شده دوباره فرم نمی‌خواهد.
+  function needsPrechatForm() {
+    return !!(widgetConfig && widgetConfig.prechatForm && !visitor && !history.length);
+  }
+
+  function normalizePhone(raw) {
+    let v = String(raw || '')
+      .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+      .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+      .replace(/[^\d]/g, '');
+    if (v.startsWith('0098')) v = v.slice(4);
+    else if (v.startsWith('98') && v.length > 10) v = v.slice(2);
+    if (v.length > 1 && v[0] === '9') v = '0' + v;
+    return v;
+  }
+
+  function maybeShowPrechatForm() {
+    if (!needsPrechatForm()) {
+      panel.classList.remove('form-mode');
+      return;
+    }
+    if (shadow.getElementById('prechat')) return;
+    panel.classList.add('form-mode');
+
+    const form = document.createElement('form');
+    form.className = 'prechat';
+    form.id = 'prechat';
+    form.noValidate = true;
+    form.innerHTML =
+      '<div class="pc-head">قبل از شروع گفتگو</div>' +
+      '<div class="pc-sub">لطفاً نام و شماره موبایلتان را وارد کنید تا اگر لازم شد، همکاران ما بتوانند پیگیری کنند.</div>' +
+      '<label for="pcName">نام و نام خانوادگی</label>' +
+      '<input id="pcName" type="text" autocomplete="name" maxlength="60" />' +
+      '<label for="pcPhone">شماره موبایل</label>' +
+      '<input id="pcPhone" class="ltr" type="tel" inputmode="numeric" autocomplete="tel" maxlength="16" placeholder="09123456789" />' +
+      '<div class="pc-err" id="pcErr"></div>' +
+      '<button type="submit">شروع گفتگو</button>';
+    messagesEl.appendChild(form);
+
+    const nameEl = form.querySelector('#pcName');
+    const phoneEl = form.querySelector('#pcPhone');
+    const errEl = form.querySelector('#pcErr');
+    // مثل کادر پیام، کلیدها به سایت میزبان نمی‌رسند تا میانبرهای صفحه با تایپ فعال نشوند
+    [nameEl, phoneEl].forEach(el => {
+      ['keydown', 'keyup', 'keypress'].forEach(t => el.addEventListener(t, e => e.stopPropagation()));
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const name = nameEl.value.replace(/\s+/g, ' ').trim();
+      const phone = normalizePhone(phoneEl.value);
+      if (name.length < 2) { errEl.textContent = 'لطفاً نام خود را وارد کنید.'; nameEl.focus(); return; }
+      if (!/^09\d{9}$/.test(phone)) { errEl.textContent = 'شماره موبایل معتبر نیست (مثلاً ۰۹۱۲۳۴۵۶۷۸۹).'; phoneEl.focus(); return; }
+      visitor = { name: name.slice(0, 60), phone };
+      try { localStorage.setItem(VISITOR_KEY, JSON.stringify(visitor)); } catch (err) { /* بدون ذخیره هم کار می‌کند */ }
+      form.remove();
+      panel.classList.remove('form-mode');
+      if (!isMobileDevice) inputEl.focus();
+    });
+
+    scrollToBottom();
+    if (!isMobileDevice) setTimeout(() => nameEl.focus(), 50);
+  }
+
+  // ---------- پیام خودکار ----------
+  // بعد از چند ثانیه یا ابزارک را کامل باز می‌کند یا متن را بالای حباب نشان می‌دهد.
+  // «همیشه» یعنی یک بار در هر بازدید (sessionStorage)، «فقط یک‌بار» یعنی یک بار برای همیشه.
+  function autoMessageAlreadyShown(freq) {
+    try {
+      return freq === 'once'
+        ? !!localStorage.getItem(AUTO_ONCE_KEY)
+        : !!sessionStorage.getItem(AUTO_ONCE_KEY);
+    } catch (e) { return false; }
+  }
+  function markAutoMessageShown(freq) {
+    try {
+      if (freq === 'once') localStorage.setItem(AUTO_ONCE_KEY, '1');
+      sessionStorage.setItem(AUTO_ONCE_KEY, '1');
+    } catch (e) { /* بی‌اهمیت */ }
+  }
+
+  function showTeaser(text) {
+    teaserTextEl.textContent = text;
+    teaserEl.classList.add('show');
+  }
+  function hideTeaser() { teaserEl.classList.remove('show'); }
+  teaserEl.addEventListener('click', () => setOpen(true));
+  teaserCloseBtn.addEventListener('click', (e) => { e.stopPropagation(); hideTeaser(); });
+
+  function scheduleAutoMessage() {
+    const am = widgetConfig && widgetConfig.autoMessage;
+    if (!am || !am.text) return;
+    // وقتی مشتری خودش گفتگو را شروع کرده یا پنل باز است، پیام خودکار مزاحم است
+    if (opened || history.length || displayLog.length || autoMessageAlreadyShown(am.frequency)) return;
+    const delay = Math.min(Math.max(Number(am.delay) || 0, 0), 600) * 1000;
+    autoMsgTimer = setTimeout(() => {
+      autoMsgTimer = null;
+      if (opened || history.length || displayLog.length) return;
+      markAutoMessageShown(am.frequency);
+      greetingOverride = am.text;
+      if (am.open) setOpen(true);
+      else showTeaser(am.text);
+    }, delay);
+  }
+
+  async function loadWidgetConfig() {
+    try {
+      const res = await fetch(CONFIG_URL + '?siteKey=' + encodeURIComponent(SITE_KEY));
+      if (!res.ok) return;
+      widgetConfig = await res.json();
+    } catch (e) { return; /* بدون تنظیمات، ویجت مثل قبل کار می‌کند */ }
+    if (opened) maybeShowPrechatForm();
+    scheduleAutoMessage();
+  }
 
   // اسکرول به پایین رو با یک فریم تأخیر انجام می‌دیم تا مطمئن بشیم مرورگر ارتفاع
   // واقعی محتوای تازه‌اضافه‌شده (مخصوصاً ردیف کارت‌های محصول) رو محاسبه کرده،
@@ -991,7 +1200,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: text, history, siteKey: SITE_KEY, sessionId,
+          message: text, history, siteKey: SITE_KEY, sessionId, visitor,
           pageUrl: (location.href || '').slice(0, 500),
           page: PAGE
         })
@@ -1051,4 +1260,5 @@
   inputEl.addEventListener('keypress', (e) => e.stopPropagation());
 
   restoreState();
+  loadWidgetConfig();
 })();
