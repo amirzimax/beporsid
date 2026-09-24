@@ -1580,6 +1580,13 @@
             <div class="card-head"><div><h2>توزیع پلن‌ها و اتصال‌ها</h2></div></div>
             <div class="adm-kv" id="adm-breakdown"></div>
           </div>
+          <div class="card">
+            <div class="card-head">
+              <div><h2>اعلان‌های مدیریتی در تلگرام</h2><p class="muted">ثبت‌نام جدید، پرداخت موفق و نیمه‌کاره، خطای درگاه، قطع سرویس هوش مصنوعی، کرش سرور و بکاپ شبانه.</p></div>
+              <button class="btn btn-outline" onclick="adminAlertTest(this)">ارسال پیام آزمایشی</button>
+            </div>
+            <div id="adm-alerts" class="fine"></div>
+          </div>
         </div>
 
         <!-- فروشگاه‌ها -->
@@ -3593,6 +3600,29 @@
     } catch (e) {
       box.innerHTML = `<div class="kb-empty"><span class="error">${esc(e.message)}</span></div>`;
     }
+    loadAdminAlerts();
+  }
+
+  async function loadAdminAlerts() {
+    const box = $('adm-alerts');
+    try {
+      const st = await api('/api/admin/alerts');
+      box.innerHTML = st.targets.length
+        ? `<span class="badge connected">فعال</span> با ربات تلگرام حساب «${esc(st.targets.join('»، «'))}» فرستاده می‌شود.`
+        : `<span class="badge disconnected">غیرفعال</span> هیچ‌کدام از حساب‌های مدیر ربات تلگرام وصل‌شده ندارد. با حساب مدیر از «تنظیمات ← ربات تلگرام» ربات را وصل کنید و حساب تلگرام خودتان را به آن لینک کنید.`;
+    } catch (e) {
+      box.innerHTML = `<span class="error">${esc(e.message)}</span>`;
+    }
+  }
+
+  async function adminAlertTest(btn) {
+    busy(btn, true);
+    try {
+      await api('/api/admin/alerts/test', { method: 'POST' });
+      toast('پیام آزمایشی به تلگرام شما فرستاده شد');
+    } catch (e) {
+      toast(e.message, 'err');
+    } finally { busy(btn, false); }
   }
 
   function adminShopSearchChanged() {

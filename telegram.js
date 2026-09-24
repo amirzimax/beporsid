@@ -6,11 +6,13 @@ const API = 'https://api.telegram.org';
 // خطای تلگرام را با پیام فارسی قابل‌فهم بالا می‌فرستد، بدون افشای توکن
 async function call(token, method, body) {
   let res;
+  // ارسال فایل با multipart است و Content-Type را خود fetch (همراه boundary) می‌گذارد
+  const isForm = body instanceof FormData;
   try {
     res = await fetch(`${API}/bot${token}/${method}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body || {})
+      headers: isForm ? undefined : { 'Content-Type': 'application/json' },
+      body: isForm ? body : JSON.stringify(body || {})
     });
   } catch (e) {
     throw new Error('ارتباط با سرور تلگرام برقرار نشد.');
@@ -56,6 +58,15 @@ function sendMessage(token, chatId, text, opts) {
   }, opts || {}));
 }
 
+// ارسال فایل (سقف Bot API برای آپلود ۵۰ مگابایت است)
+function sendDocument(token, chatId, buffer, filename, caption) {
+  const form = new FormData();
+  form.append('chat_id', String(chatId));
+  if (caption) form.append('caption', String(caption).slice(0, 1024));
+  form.append('document', new Blob([buffer]), filename);
+  return call(token, 'sendDocument', form);
+}
+
 function answerCallbackQuery(token, id, text) {
   return call(token, 'answerCallbackQuery', { callback_query_id: id, text: text || '' });
 }
@@ -79,6 +90,6 @@ function formatProducts(products, searchLink, searchLabel) {
 }
 
 module.exports = {
-  getMe, setWebhook, deleteWebhook, sendMessage, answerCallbackQuery,
+  getMe, setWebhook, deleteWebhook, sendMessage, sendDocument, answerCallbackQuery,
   formatProducts, escapeHtml
 };

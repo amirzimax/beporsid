@@ -1303,6 +1303,29 @@ function listSmsLog(limit = 100) {
   `).all(limit);
 }
 
+// حساب‌های مدیری که ربات تلگرامشان وصل و به صاحب حساب لینک شده؛ اعلان‌های مدیریتی
+// (پرداخت، خطا، بکاپ) با همان ربات برای مدیر فرستاده می‌شود
+function listAdminAlertTargets(phones) {
+  const list = [...phones];
+  if (!list.length) return [];
+  return db.prepare(`
+    SELECT id, shop_name, phone, telegram_bot_token_enc, telegram_owner_chat_id FROM shops
+    WHERE phone IN (${list.map(() => '?').join(',')})
+      AND COALESCE(telegram_bot_token_enc, '') <> '' AND COALESCE(telegram_owner_chat_id, '') <> ''
+  `).all(...list);
+}
+
+// خلاصه‌ی ۲۴ ساعت اخیر برای پیام بکاپ شبانه
+function dailySummary() {
+  const one = sql => db.prepare(sql).get();
+  return {
+    shops: one(`SELECT COUNT(*) AS n FROM shops`).n,
+    signups: one(`SELECT COUNT(*) AS n FROM shops WHERE created_at >= datetime('now', '-1 day')`).n,
+    paid: one(`SELECT COUNT(*) AS n, COALESCE(SUM(amount), 0) AS sum FROM payments WHERE status = 'paid' AND paid_at >= datetime('now', '-1 day')`),
+    conversations: one(`SELECT COUNT(*) AS n FROM conversations WHERE started_at >= datetime('now', '-1 day')`).n
+  };
+}
+
 function toPublicShop(shop) {
   if (!shop) return null;
   return {
@@ -1373,6 +1396,8 @@ module.exports = {
   releaseSmsDedup,
   failStaleSmsCampaigns,
   listSmsLog,
+  listAdminAlertTargets,
+  dailySummary,
   encrypt,
   decrypt,
   getShopById,

@@ -16,6 +16,7 @@ const { extractText, SUPPORTED: SUPPORTED_DOCS } = require('./extract');
 const billing = require('./billing');
 const telegram = require('./telegram');
 const crm = require('./crm');
+const alerts = require('./alerts');
 // آپلود فایل‌های پایگاه دانش (docx/xlsx/pdf/txt) - حداکثر ۱۰ مگابایت
 const uploadDoc = multer({ storage: multer.memoryStorage(), limits: { fileSize: knowledge.LIMITS.file.maxBytes } });
 
@@ -1161,6 +1162,7 @@ app.post('/auth/otp/verify', otpVerifyLimiter, (req, res) => {
     shop = createShopWithPhone(phone, name);
     // پیامک خوش‌آمد نباید ورود را معطل یا خراب کند
     crm.sendWelcome(shop).catch(e => console.error('خطای پیامک خوش‌آمد:', e.message));
+    alerts.notify(`👤 ثبت‌نام جدید\n${name || 'بدون نام'} · ${phone}`);
   }
 
   const token = jwt.sign({ shopId: shop.id }, JWT_SECRET, { expiresIn: '30d' });
@@ -1301,6 +1303,19 @@ app.get('/api/admin/conversations/:id', adminOnly, (req, res) => {
   const conv = getConversationAsAdmin(Number(req.params.id));
   if (!conv) return res.status(404).json({ error: 'گفتگو پیدا نشد.' });
   res.json({ conversation: conv });
+});
+
+// ==================== اعلان‌های مدیریتی ====================
+
+app.get('/api/admin/alerts', adminOnly, (req, res) => {
+  res.json(alerts.status());
+});
+
+app.post('/api/admin/alerts/test', adminOnly, async (req, res) => {
+  const st = alerts.status();
+  if (!st.targets.length) return res.status(400).json({ error: 'هیچ حساب مدیری ربات تلگرام وصل‌شده ندارد.' });
+  await alerts.notifyAdmins('✅ اعلان‌های مدیریتی بپرسید فعال است.\nپرداخت‌ها، ثبت‌نام‌ها، خطاها و بکاپ شبانه در همین گفتگو اطلاع داده می‌شود.');
+  res.json({ ok: true, targets: st.targets });
 });
 
 // ==================== باشگاه مشتریان (پیامک به کاربران بپرسید) ====================
@@ -1833,6 +1848,10 @@ app.post('/api/billing/checkout', requireAuth, async (req, res) => {
     res.json({ url });
   } catch (err) {
     markPaymentFailed(paymentId);
+    alerts.notify(`⚠️ خطای درگاه پرداخت — مشتری نتوانست وارد درگاه شود\n` +
+      `${req.shop.shop_name || req.shop.owner_name || 'فروشگاه'} · ${req.shop.phone || ''}\n` +
+      `پلن ${plan.name} ${cycle === 'yearly' ? 'سالانه' : 'ماهانه'} — ${alerts.toman(amount)}\n\n${err.message || ''}`,
+      { key: 'checkout-error', throttleMs: 10 * 60 * 1000 });
     res.status(500).json({ error: err.message || 'خطا در اتصال به درگاه پرداخت.' });
   }
 });
@@ -1840,6 +1859,13 @@ app.post('/api/billing/checkout', requireAuth, async (req, res) => {
 // بازگشت از درگاه زرین‌پال (GET، بدون هدر Authorization چون مرورگر مستقیم اینجا ریدایرکت می‌شه).
 // هویت فروشگاه از خودِ رکورد پرداخت (pid که خودمون موقع ساخت تراکنش دادیم) میاد، نه از توکن کاربر.
 // Status=OK در URL هرگز به‌تنهایی ملاک نیست؛ همیشه با verifyPayment نزد خودِ زرین‌پال چک می‌شه.
+function paymentAlertLine(payment) {
+  const shop = getShopById(payment.shop_id) || {};
+  const plan = billing.PLANS[payment.plan];
+  return `${shop.shop_name || shop.owner_name || 'فروشگاه'} · ${shop.phone || ''}\n` +
+    `پلن ${plan ? plan.name : payment.plan} ${payment.cycle === 'yearly' ? 'سالانه' : 'ماهانه'} — ${alerts.toman(payment.amount)}`;
+}
+
 app.get('/billing/callback', async (req, res) => {
   const paymentId = Number(req.query.pid);
   const payment = paymentId ? getPaymentById(paymentId) : null;
@@ -1850,6 +1876,8 @@ app.get('/billing/callback', async (req, res) => {
     return res.redirect(`${PUBLIC_DASHBOARD_URL}?billing=success#billing`);
   }
   if (req.query.Status !== 'OK') {
+    // فقط اولین بازگشت اعلان می‌شود (رفرش صفحه دوباره اعلان نمی‌فرستد)
+    if (payment.status === 'pending') alerts.notify(`❕ پرداخت نیمه‌کاره — مشتری از درگاه برگشت\n${paymentAlertLine(payment)}\n\nفرصت خوبی برای پیگیری تلفنی است.`);
     markPaymentFailed(payment.id);
     return res.redirect(`${PUBLIC_DASHBOARD_URL}?billing=cancelled#billing`);
   }
@@ -1868,8 +1896,14 @@ app.get('/billing/callback', async (req, res) => {
     markPaymentPaid(payment.id, refId, cardPan);
     if (plan) extendShopPlan(payment.shop_id, plan.id, payment.cycle === 'yearly' ? 365 : 30);
     res.redirect(`${PUBLIC_DASHBOARD_URL}?billing=success#billing`);
+    alerts.notify(`💰 پرداخت موفق\n${paymentAlertLine(payment)}\nکد پیگیری: ${refId}`);
   } catch (err) {
     console.error('خطای تأیید پرداخت:', err.message);
+    // ممکن است پول از حساب مشتری کم شده ولی اشتراک فعال نشده باشد؛ باید دستی بررسی شود
+    if (payment.status === 'pending') {
+      alerts.notify(`🚨 تأیید پرداخت ناموفق — بررسی کنید پول از حساب مشتری کم شده یا نه\n${paymentAlertLine(payment)}\n` +
+        `شناسه‌ی تراکنش: ${payment.id}\n\n${err.message || ''}`);
+    }
     markPaymentFailed(payment.id);
     res.redirect(`${PUBLIC_DASHBOARD_URL}?billing=failed#billing`);
   }
@@ -2562,6 +2596,9 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
     }
   } catch (err) {
     console.error('خطای چت:', err?.status || '', err?.message || err, err?.cause || '');
+    alerts.notify(`⚠️ خطا در سرویس هوش مصنوعی — چت مشتری‌ها ممکن است جواب نگیرد\n` +
+      `${err?.status || ''} ${String(err?.message || err).slice(0, 300)}\n\n(تا ۳۰ دقیقه‌ی آینده اعلان تکراری این خطا فرستاده نمی‌شود)`,
+      { key: 'chat-error-' + (err?.status || 'x') });
 
     if (err?.status === 429) {
       return res.status(429).json({
@@ -2620,6 +2657,27 @@ setInterval(() => {
 }, 24 * 60 * 60 * 1000).unref();
 
 crm.startScheduler();
+
+// هر خطای پیش‌بینی‌نشده در مسیرها: به‌جای صفحه‌ی خطای پیش‌فرض Express (با استک‌تریس)،
+// جواب کوتاه فارسی و اعلان به مدیر
+app.use((err, req, res, next) => {
+  console.error('خطای پیش‌بینی‌نشده:', req.method, req.path, err && (err.stack || err.message || err));
+  alerts.notify(`⚠️ خطای سرور در ${req.method} ${req.path}\n${String(err && err.message || err).slice(0, 300)}`,
+    { key: 'route-' + req.path });
+  if (res.headersSent) return next(err);
+  res.status(500).json({ error: 'خطای داخلی سرور. لطفاً دوباره امتحان کنید.' });
+});
+
+// کرش: رفتار پیش‌فرض Node (خروج و ری‌استارت توسط pm2) حفظ می‌شود، فقط قبلش مدیر خبردار می‌شود
+function crashAndAlert(label, err) {
+  console.error(label, err && (err.stack || err));
+  const done = () => process.exit(1);
+  setTimeout(done, 3000).unref();
+  alerts.notifyAdmins(`🔥 سرور کرش کرد و در حال ری‌استارت است\n${label} ${String(err && err.message || err).slice(0, 300)}`)
+    .finally(done);
+}
+process.on('uncaughtException', err => crashAndAlert('uncaughtException:', err));
+process.on('unhandledRejection', err => crashAndAlert('unhandledRejection:', err));
 
 app.listen(PORT, HOST, () => {
   console.log(`سرور چت‌بات روی ${HOST}:${PORT} در حال اجراست.`);
