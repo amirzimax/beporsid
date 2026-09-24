@@ -68,18 +68,19 @@ const VARIABLES = {
   link: 'لینک ورود به پنل'
 };
 
-function render(body, shop) {
+// extra: متغیرهای مخصوص یک پیام (مثلاً آمار گزارش هفتگی)؛ متغیر ناشناخته دست‌نخورده می‌ماند
+function render(body, shop, extra = {}) {
   const exp = parseUtc(shop.plan_expires_at);
   const days = exp ? Math.max(0, Math.ceil((exp - Date.now()) / 86400000)) : null;
-  const vars = {
+  const vars = Object.assign({
     name: String(shop.owner_name || '').trim() || 'کاربر',
     shop: String(shop.shop_name || '').trim() || 'فروشگاه شما',
     plan: planName(shop.plan),
     days: days == null ? '' : faNum(days),
     expiry: faDate(shop.plan_expires_at),
     link: DASHBOARD_URL
-  };
-  return String(body).replace(/\{(name|shop|plan|days|expiry|link)\}/g, (_, k) => vars[k]);
+  }, extra);
+  return String(body).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
 }
 
 // تعداد بخش‌های پیامک؛ هزینه به ازای هر بخش حساب می‌شود. متن فارسی یونی‌کد است:
@@ -234,6 +235,17 @@ async function runReminders() {
   }
 }
 
+// ارسال یک پیام خودکار از بیرون این ماژول (مثلاً گزارش هفتگی)، با همان قواعد: فقط اگر
+// روشن باشد، از خط خدماتی و در ساعت مجاز
+async function sendAutomation(key, shop, { vars, dedupKey } = {}) {
+  const a = getSmsAutomation(key);
+  if (!a || !a.enabled || !SERVICE_SENDER || !shop.phone || !inSendingHours()) return { skipped: true };
+  return sendOne({
+    shop, phone: shop.phone, body: render(a.body, shop, vars), kind: key,
+    ref: dedupKey || key, dedupKey, sender: SERVICE_SENDER
+  });
+}
+
 // ---------- کمپین‌ها ----------
 async function runCampaign(id) {
   if (!claimSmsCampaign(id)) return;
@@ -347,6 +359,7 @@ function startScheduler() {
 module.exports = {
   AUDIENCES, VARIABLES, OPT_OUT_SUFFIX,
   render, smsParts, reminderFor, nudgeFor, selectAudience, audienceCounts,
-  validateCampaign, scheduleCampaign, runCampaign, runReminders, sendWelcome, sendTest,
+  validateCampaign, scheduleCampaign, runCampaign, runReminders, sendWelcome, sendTest, sendAutomation,
+  faNum, faDate, tehranHour,
   getCredit, status, startScheduler, tick
 };

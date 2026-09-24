@@ -17,6 +17,7 @@ const billing = require('./billing');
 const telegram = require('./telegram');
 const crm = require('./crm');
 const alerts = require('./alerts');
+const reports = require('./reports');
 // آپلود فایل‌های پایگاه دانش (docx/xlsx/pdf/txt) - حداکثر ۱۰ مگابایت
 const uploadDoc = multer({ storage: multer.memoryStorage(), limits: { fileSize: knowledge.LIMITS.file.maxBytes } });
 
@@ -101,7 +102,8 @@ const {
   cancelSmsCampaign,
   listSmsLog,
   markWidgetSeen,
-  listActivation
+  listActivation,
+  setWeeklyReportOptOut
 } = require('./db');
 
 const app = express();
@@ -1358,7 +1360,7 @@ app.post('/api/admin/alerts/test', adminOnly, async (req, res) => {
 
 // ==================== باشگاه مشتریان (پیامک به کاربران بپرسید) ====================
 
-const SMS_AUTOMATION_KEYS = ['welcome', 'renew_7', 'renew_1', 'expired', 'nudge_setup', 'nudge_install'];
+const SMS_AUTOMATION_KEYS = ['welcome', 'renew_7', 'renew_1', 'expired', 'nudge_setup', 'nudge_install', 'weekly_report'];
 
 app.get('/api/admin/crm', adminOnly, async (req, res) => {
   res.json({
@@ -1457,8 +1459,19 @@ app.get('/api/me', requireAuth, (req, res) => {
 });
 
 // انصراف از پیامک‌های تبلیغاتی و مناسبتی (پیام‌های خدماتی مثل یادآوری تمدید همچنان می‌رسند)
+// هر فیلد فقط اگر فرستاده شده باشد عوض می‌شود
 app.post('/api/sms-preferences', requireAuth, (req, res) => {
-  res.json({ shop: publicShop(setSmsMarketingOptOut(req.shop.id, !!req.body.marketing_opt_out)) });
+  const b = req.body || {};
+  let shop = req.shop;
+  if ('marketing_opt_out' in b) shop = setSmsMarketingOptOut(shop.id, !!b.marketing_opt_out);
+  if ('weekly_report_opt_out' in b) shop = setWeeklyReportOptOut(shop.id, !!b.weekly_report_opt_out);
+  res.json({ shop: publicShop(shop) });
+});
+
+// گزارش ۷ روز گذشته، همان متنی که شنبه‌ها برای صاحب فروشگاه فرستاده می‌شود
+app.get('/api/weekly-report', requireAuth, (req, res) => {
+  const r = reports.buildReport(req.shop, reports.rollingWindow());
+  res.json({ text: r.text, stats: r.stats, prev: r.prev });
 });
 
 app.post('/api/settings', requireAuth, (req, res) => {
@@ -2707,6 +2720,7 @@ setInterval(() => {
 }, 24 * 60 * 60 * 1000).unref();
 
 crm.startScheduler();
+reports.startScheduler();
 
 // هر خطای پیش‌بینی‌نشده در مسیرها: به‌جای صفحه‌ی خطای پیش‌فرض Express (با استک‌تریس)،
 // جواب کوتاه فارسی و اعلان به مدیر

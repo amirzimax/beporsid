@@ -70,6 +70,10 @@ db.exec(`
     widget_seen_at TEXT,
     widget_domain TEXT,
 
+    -- گزارش هفتگی عملکرد دستیار: انصراف صاحب فروشگاه، و آخرین هفته‌ای که فرستاده شد
+    weekly_report_opt_out INTEGER DEFAULT 0,
+    weekly_report_week TEXT,
+
     plan TEXT DEFAULT 'trial',
     plan_expires_at TEXT,
 
@@ -115,7 +119,9 @@ const migrations = {
   telegram_link_code: "ALTER TABLE shops ADD COLUMN telegram_link_code TEXT",
   sms_marketing_opt_out: "ALTER TABLE shops ADD COLUMN sms_marketing_opt_out INTEGER DEFAULT 0",
   widget_seen_at: "ALTER TABLE shops ADD COLUMN widget_seen_at TEXT",
-  widget_domain: "ALTER TABLE shops ADD COLUMN widget_domain TEXT"
+  widget_domain: "ALTER TABLE shops ADD COLUMN widget_domain TEXT",
+  weekly_report_opt_out: "ALTER TABLE shops ADD COLUMN weekly_report_opt_out INTEGER DEFAULT 0",
+  weekly_report_week: "ALTER TABLE shops ADD COLUMN weekly_report_week TEXT"
 };
 for (const [col, sql] of Object.entries(migrations)) {
   if (!existingColumns.includes(col)) db.exec(sql);
@@ -1188,7 +1194,8 @@ const SMS_AUTOMATION_DEFAULTS = {
   renew_1: '{name} عزیز، اشتراک «{plan}» بپرسید فردا به پایان می‌رسد.\nتمدید در کمتر از یک دقیقه:\n{link}',
   expired: '{name} عزیز، اشتراک «{plan}» بپرسید به پایان رسید.\nبرای ادامه‌ی پاسخ‌گویی کامل چت‌بات به مشتری‌ها تمدید کنید:\n{link}',
   nudge_setup: '{name} عزیز، دستیار بپرسید هنوز چیزی درباره‌ی فروشگاهتان نمی‌داند.\nبا اتصال فروشگاه یا افزودن محصولات، در چند دقیقه آماده‌ی جواب دادن به مشتری‌هاست:\n{link}',
-  nudge_install: '{name} عزیز، دستیار فروشگاهتان آماده است ولی هنوز روی سایت نصب نشده.\nکد نصب فقط یک خط است؛ اگر کمک خواستید از پنل تیکت بزنید، خودمان نصبش می‌کنیم:\n{link}'
+  nudge_install: '{name} عزیز، دستیار فروشگاهتان آماده است ولی هنوز روی سایت نصب نشده.\nکد نصب فقط یک خط است؛ اگر کمک خواستید از پنل تیکت بزنید، خودمان نصبش می‌کنیم:\n{link}',
+  weekly_report: '{name} عزیز، گزارش هفته‌ی دستیار بپرسید:\n{conversations} گفتگو، {questions} سؤال جواب داده شد و {products} بار محصول پیشنهاد شد.\nجزئیات: {link}'
 };
 {
   const ins = db.prepare('INSERT OR IGNORE INTO sms_automations (key, enabled, body) VALUES (?, 0, ?)');
@@ -1198,6 +1205,44 @@ const SMS_AUTOMATION_DEFAULTS = {
 function setSmsMarketingOptOut(shopId, optOut) {
   db.prepare('UPDATE shops SET sms_marketing_opt_out = ? WHERE id = ?').run(optOut ? 1 : 0, shopId);
   return getShopById(shopId);
+}
+
+function setWeeklyReportOptOut(shopId, optOut) {
+  db.prepare('UPDATE shops SET weekly_report_opt_out = ? WHERE id = ?').run(optOut ? 1 : 0, shopId);
+  return getShopById(shopId);
+}
+
+// ---------- گزارش هفتگی ----------
+// آمار یک بازه برای یک فروشگاه. پیش‌نمایش داخل پنل حساب نمی‌شود؛ گفتگوهای تلگرام (بدون
+// page_url) حساب می‌شوند.
+function periodStats(shopId, from, to) {
+  const r = db.prepare(`
+    SELECT
+      COUNT(DISTINCT c.id) AS conversations,
+      COALESCE(SUM(m.role = 'user'), 0) AS questions,
+      COALESCE(SUM(m.role = 'assistant'), 0) AS answers,
+      COALESCE(SUM(m.role = 'assistant' AND m.products_json IS NOT NULL AND m.products_json <> '[]'), 0) AS product_msgs,
+      COUNT(DISTINCT CASE WHEN COALESCE(c.customer_phone, '') <> '' THEN c.id END) AS leads,
+      COUNT(DISTINCT CASE WHEN c.needs_agent = 1 THEN c.id END) AS handoffs
+    FROM messages m JOIN conversations c ON c.id = m.conversation_id
+    WHERE c.shop_id = ? AND m.created_at >= ? AND m.created_at < ?
+      AND COALESCE(c.page_url, '') NOT LIKE '%://api.beporsid.com%'
+  `).get(shopId, from, to);
+  return r;
+}
+
+function listWeeklyReportShops() {
+  return db.prepare(`
+    SELECT id, phone, owner_name, shop_name, plan, plan_expires_at, weekly_report_week,
+      telegram_bot_token_enc, telegram_owner_chat_id
+    FROM shops WHERE COALESCE(weekly_report_opt_out, 0) = 0
+  `).all();
+}
+
+// «برداشتن» گزارش این هفته به‌صورت اتمیک، تا با ری‌استارت یا اجرای دوباره دو بار فرستاده نشود
+function claimWeeklyReport(shopId, week) {
+  return db.prepare(`UPDATE shops SET weekly_report_week = ? WHERE id = ? AND COALESCE(weekly_report_week, '') <> ?`)
+    .run(week, shopId, week).changes > 0;
 }
 
 function listSmsAutomations() {
@@ -1416,7 +1461,8 @@ function toPublicShop(shop) {
     telegram_link_code: shop.telegram_link_code || null,
     sms_marketing_opt_out: !!shop.sms_marketing_opt_out,
     widget_seen_at: shop.widget_seen_at || null,
-    widget_domain: shop.widget_domain || null
+    widget_domain: shop.widget_domain || null,
+    weekly_report_opt_out: !!shop.weekly_report_opt_out
   };
 }
 
@@ -1445,6 +1491,10 @@ module.exports = {
   dailySummary,
   markWidgetSeen,
   listActivation,
+  setWeeklyReportOptOut,
+  periodStats,
+  listWeeklyReportShops,
+  claimWeeklyReport,
   encrypt,
   decrypt,
   getShopById,
