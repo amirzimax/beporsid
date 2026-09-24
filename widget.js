@@ -532,6 +532,29 @@
 
       .msg-link { color: ${THEME_COLOR}; text-decoration: underline; word-break: break-all; }
       .msg.user .msg-link { color: #fff; }
+
+      /* ---------- خوانایی روی موبایل ----------
+         پنل روی گوشی تمام‌صفحه است و با اندازه‌های دسکتاپ متن‌ها ریز دیده می‌شدند.
+         کلاس mobile-mode را جاوااسکریپت بر اساس اندازه‌ی واقعی صفحه‌ی گوشی می‌گذارد؛
+         به media query تکیه نمی‌کنیم چون بعضی سایت‌ها تگ viewport درست ندارند. */
+      .panel.mobile-mode .header .t1 { font-size: 16px; }
+      .panel.mobile-mode .header .t2 { font-size: 12.5px; }
+      .panel.mobile-mode .msg { max-width: 88%; }
+      .panel.mobile-mode .msg .bubble-text { font-size: 15.5px; line-height: 1.75; padding: 10px 14px; }
+      .panel.mobile-mode .msg .time { font-size: 11.5px; }
+      .panel.mobile-mode .agent-label { font-size: 12.5px; }
+      .panel.mobile-mode .sys-note { font-size: 13px; }
+      .panel.mobile-mode .retry { font-size: 13.5px; }
+      .panel.mobile-mode .product-card .pc-title { font-size: 13.5px; }
+      .panel.mobile-mode .product-card .pc-price { font-size: 14.5px; }
+      .panel.mobile-mode .product-card .pc-oos { font-size: 12px; }
+      .panel.mobile-mode .hd-head { font-size: 15px; }
+      .panel.mobile-mode .hd-text { font-size: 14px; }
+      .panel.mobile-mode .hd-btn { font-size: 14px; }
+      .panel.mobile-mode .prechat .pc-head { font-size: 15px; }
+      .panel.mobile-mode .prechat .pc-sub,
+      .panel.mobile-mode .prechat label { font-size: 13.5px; }
+      .panel.mobile-mode .prechat input { font-size: 16px; }
     </style>
 
     <button class="bubble" id="bubble" aria-label="گفتگو با دستیار فروشگاه">

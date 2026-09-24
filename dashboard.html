@@ -394,7 +394,9 @@
   .inbox-view { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--paper); }
   .view-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px; background: var(--card); border-bottom: 1px solid var(--line); }
   .view-head .t b { display: block; font-size: 14px; }
-  .view-head .t span { font-size: 12px; color: var(--ink-soft); direction: ltr; unicode-bidi: embed; display: inline-block; max-width: 420px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+  /* plaintext: جهت را از اولین حرف متن می‌گیرد؛ تاریخ فارسی راست‌به‌چپ و آدرس لاتین درست
+     می‌ماند. قبلاً ltr اجباری بود و عدد روزِ تاریخ از بقیه جدا می‌افتاد. */
+  .view-head .t span { font-size: 12px; color: var(--ink-soft); unicode-bidi: plaintext; display: inline-block; max-width: 420px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
   .view-head .back { display: none; }
   .view-body { flex: 1; min-height: 0; overflow-y: auto; padding: 20px 18px; display: flex; flex-direction: column; gap: 10px; }
   .inbox-items { min-height: 0; }
@@ -432,6 +434,15 @@
     .inbox.show-view .inbox-view { display: flex; }
     .view-head .back { display: inline-flex; }
     .view-head .t span { max-width: 180px; }
+  }
+  /* روی موبایل عنوان (نام بازدیدکننده + تاریخ) و دکمه‌های «رسیدگی کردم/حذف» در یک
+     ردیف جا نمی‌شدند و دکمه‌ها روی تاریخ می‌افتادند؛ دکمه‌ها به ردیف دوم می‌روند. */
+  @media (max-width: 560px) {
+    .view-head { flex-wrap: wrap; row-gap: 10px; }
+    .view-head > div:first-child { flex: 1 1 100%; }
+    .view-head .t { min-width: 0; }
+    .view-head .t span { max-width: 100%; }
+    .view-head .view-actions { flex: 1 1 100%; justify-content: flex-start; }
   }
 
   /* ---------- billing ---------- */
@@ -2050,7 +2061,7 @@
             </button>
             <div class="t"><b>${esc(visitorLabel(c))}${c.customer_phone ? ` <a href="tel:${esc(c.customer_phone)}" dir="ltr" style="font-weight:500;font-size:12.5px;color:var(--firooze-deep);text-decoration:none">${esc(fa(c.customer_phone))}</a>` : ''}</b><span title="${esc(c.page_url || '')}">${esc(fullTime(c.started_at))}${c.page_url ? ' · ' + esc(pageLabel(c.page_url)) : ''}</span></div>
           </div>
-          <div style="display:flex;gap:8px;flex:none">
+          <div class="view-actions" style="display:flex;gap:8px;flex:none">
             ${isPending(c)
               ? `<button class="btn btn-primary" style="padding:6px 12px;font-size:12.5px" onclick="setConversationHandled(${c.id}, true)">رسیدگی کردم</button>`
               : (c.needs_agent ? `<button class="btn btn-outline" style="padding:6px 12px;font-size:12.5px" onclick="setConversationHandled(${c.id}, false)">برگرداندن به انتظار</button>` : '')}
