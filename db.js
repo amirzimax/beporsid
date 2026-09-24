@@ -63,6 +63,9 @@ db.exec(`
     telegram_owner_chat_id TEXT,
     telegram_link_code TEXT,
 
+    -- ۱ یعنی کاربر نخواسته پیامک مناسبتی و تبلیغاتیِ بپرسید را دریافت کند
+    sms_marketing_opt_out INTEGER DEFAULT 0,
+
     plan TEXT DEFAULT 'trial',
     plan_expires_at TEXT,
 
@@ -105,7 +108,8 @@ const migrations = {
   telegram_bot_username: "ALTER TABLE shops ADD COLUMN telegram_bot_username TEXT",
   telegram_secret: "ALTER TABLE shops ADD COLUMN telegram_secret TEXT",
   telegram_owner_chat_id: "ALTER TABLE shops ADD COLUMN telegram_owner_chat_id TEXT",
-  telegram_link_code: "ALTER TABLE shops ADD COLUMN telegram_link_code TEXT"
+  telegram_link_code: "ALTER TABLE shops ADD COLUMN telegram_link_code TEXT",
+  sms_marketing_opt_out: "ALTER TABLE shops ADD COLUMN sms_marketing_opt_out INTEGER DEFAULT 0"
 };
 for (const [col, sql] of Object.entries(migrations)) {
   if (!existingColumns.includes(col)) db.exec(sql);
@@ -1124,6 +1128,181 @@ function getConversationAsAdmin(conversationId) {
 }
 
 // نسخه‌ای از رکورد فروشگاه که برای فرانت‌اند امن باشه بفرستیم (بدون رمزهای حساس)
+// ==================== باشگاه مشتریان (پیامک به کاربران بپرسید) ====================
+// sms_automations: پیام‌های خودکار (خوش‌آمد، یادآوری تمدید، پایان اشتراک). پیش‌فرض همه
+//   خاموش‌اند تا با انتشار کد، هیچ پیامکی بی‌اجازه‌ی مدیر برای کاربر واقعی نرود.
+// sms_campaigns: ارسال‌های گروهی مناسبتی/تبلیغاتی که مدیر می‌سازد.
+// sms_log: هر پیامک یک ردیف. dedup_key یکتا است تا یک یادآوری برای یک تاریخ انقضا
+//   هرگز دو بار نرود، حتی اگر زمان‌بند دو بار هم‌زمان اجرا شود.
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sms_automations (
+    key TEXT PRIMARY KEY,
+    enabled INTEGER DEFAULT 0,
+    body TEXT NOT NULL DEFAULT '',
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS sms_campaigns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    audience TEXT NOT NULL,
+    body TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'scheduled',
+    scheduled_at TEXT,
+    started_at TEXT,
+    finished_at TEXT,
+    total INTEGER DEFAULT 0,
+    sent INTEGER DEFAULT 0,
+    failed INTEGER DEFAULT 0,
+    skipped INTEGER DEFAULT 0,
+    error TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS sms_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shop_id INTEGER,
+    phone TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    ref TEXT,
+    dedup_key TEXT UNIQUE,
+    body TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    provider_id TEXT,
+    error TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_sms_log_created ON sms_log(created_at DESC);
+`);
+
+const SMS_AUTOMATION_DEFAULTS = {
+  welcome: '{name} عزیز، به بپرسید خوش آمدید!\nدستیار هوش مصنوعی فروشگاهتان آماده است؛ هر ماه ۲۰۰ پاسخ رایگان دارید.\nشروع: {link}',
+  renew_7: '{name} عزیز، اشتراک «{plan}» بپرسید {days} روز دیگر ({expiry}) به پایان می‌رسد.\nبرای اینکه پاسخ‌گویی چت‌بات قطع نشود تمدید کنید:\n{link}',
+  renew_1: '{name} عزیز، اشتراک «{plan}» بپرسید فردا به پایان می‌رسد.\nتمدید در کمتر از یک دقیقه:\n{link}',
+  expired: '{name} عزیز، اشتراک «{plan}» بپرسید به پایان رسید.\nبرای ادامه‌ی پاسخ‌گویی کامل چت‌بات به مشتری‌ها تمدید کنید:\n{link}'
+};
+{
+  const ins = db.prepare('INSERT OR IGNORE INTO sms_automations (key, enabled, body) VALUES (?, 0, ?)');
+  for (const [key, body] of Object.entries(SMS_AUTOMATION_DEFAULTS)) ins.run(key, body);
+}
+
+function setSmsMarketingOptOut(shopId, optOut) {
+  db.prepare('UPDATE shops SET sms_marketing_opt_out = ? WHERE id = ?').run(optOut ? 1 : 0, shopId);
+  return getShopById(shopId);
+}
+
+function listSmsAutomations() {
+  return db.prepare('SELECT key, enabled, body, updated_at FROM sms_automations').all()
+    .map(a => ({ ...a, enabled: !!a.enabled }));
+}
+
+function getSmsAutomation(key) {
+  const a = db.prepare('SELECT key, enabled, body FROM sms_automations WHERE key = ?').get(key);
+  return a ? { ...a, enabled: !!a.enabled } : null;
+}
+
+function updateSmsAutomation(key, { enabled, body }) {
+  db.prepare(`UPDATE sms_automations SET enabled = ?, body = ?, updated_at = datetime('now') WHERE key = ?`)
+    .run(enabled ? 1 : 0, body, key);
+  return getSmsAutomation(key);
+}
+
+// همه‌ی کاربرانی که شماره‌ی موبایل دارند؛ فیلتر مخاطب (رایگان، پولی، ...) در crm.js انجام
+// می‌شود چون تعداد فروشگاه‌ها کم است و منطقش آنجا خواناتر و قابل‌تست‌تر است.
+function listSmsRecipients() {
+  return db.prepare(`
+    SELECT s.id, s.phone, s.owner_name, s.shop_name, s.plan, s.plan_expires_at, s.created_at,
+      s.sms_marketing_opt_out,
+      (COALESCE(s.shopfa_password_enc, '') <> '' OR COALESCE(s.woo_consumer_secret_enc, '') <> ''
+        OR COALESCE(s.portal_password_enc, '') <> '') AS store_connected
+    FROM shops s
+    WHERE COALESCE(s.phone, '') <> ''
+  `).all();
+}
+
+function createSmsCampaign({ title, kind, audience, body, scheduled_at }) {
+  const info = db.prepare(`
+    INSERT INTO sms_campaigns (title, kind, audience, body, status, scheduled_at)
+    VALUES (?, ?, ?, ?, 'scheduled', COALESCE(?, datetime('now')))
+  `).run(title, kind, audience, body, scheduled_at || null);
+  return getSmsCampaign(info.lastInsertRowid);
+}
+
+function getSmsCampaign(id) {
+  return db.prepare('SELECT * FROM sms_campaigns WHERE id = ?').get(id) || null;
+}
+
+function listSmsCampaigns(limit = 50) {
+  return db.prepare('SELECT * FROM sms_campaigns ORDER BY id DESC LIMIT ?').all(limit);
+}
+
+function dueSmsCampaigns() {
+  return db.prepare(`SELECT id FROM sms_campaigns WHERE status = 'scheduled' AND scheduled_at <= datetime('now') ORDER BY id`).all();
+}
+
+// «برداشتن» یک کمپین برای ارسال، به‌صورت اتمیک: اگر دو اجرای هم‌زمان زمان‌بند یک کمپین را
+// ببینند، فقط یکی موفق می‌شود و کمپین دو بار ارسال نمی‌شود.
+function claimSmsCampaign(id) {
+  const r = db.prepare(`UPDATE sms_campaigns SET status = 'sending', started_at = datetime('now') WHERE id = ? AND status = 'scheduled'`).run(id);
+  return r.changes > 0;
+}
+
+function updateSmsCampaign(id, fields) {
+  const allowed = ['status', 'total', 'sent', 'failed', 'skipped', 'error', 'finished_at'];
+  const keys = Object.keys(fields).filter(k => allowed.includes(k));
+  if (!keys.length) return;
+  db.prepare(`UPDATE sms_campaigns SET ${keys.map(k => `${k} = @${k}`).join(', ')} WHERE id = @id`)
+    .run(Object.assign({ id }, fields));
+}
+
+function cancelSmsCampaign(id) {
+  const r = db.prepare(`UPDATE sms_campaigns SET status = 'canceled' WHERE id = ? AND status = 'scheduled'`).run(id);
+  return r.changes > 0;
+}
+
+// پیش از ارسال، یک ردیف «در انتظار» ثبت می‌شود. اگر dedup_key از قبل وجود داشته باشد
+// (یعنی همین یادآوری قبلاً فرستاده شده) null برمی‌گردد و ارسال انجام نمی‌شود.
+function reserveSmsLog({ shop_id, phone, kind, ref, dedup_key, body }) {
+  const r = db.prepare(`
+    INSERT OR IGNORE INTO sms_log (shop_id, phone, kind, ref, dedup_key, body, status)
+    VALUES (?, ?, ?, ?, ?, ?, 'pending')
+  `).run(shop_id || null, phone, kind, ref || null, dedup_key || null, body);
+  return r.changes > 0 ? r.lastInsertRowid : null;
+}
+
+function completeSmsLog(id, { status, provider_id, error }) {
+  db.prepare('UPDATE sms_log SET status = ?, provider_id = ?, error = ? WHERE id = ?')
+    .run(status, provider_id || null, error ? String(error).slice(0, 300) : null, id);
+}
+
+// ارسال ناموفق، قفل dedup را آزاد می‌کند تا دفعه‌ی بعد دوباره تلاش شود؛ ولی برای شماره‌ای که
+// مدام خطا می‌دهد تعداد تلاش را می‌شماریم تا بی‌نهایت تکرار نشود.
+function countSmsFailures(ref) {
+  return db.prepare(`SELECT COUNT(*) AS n FROM sms_log WHERE ref = ? AND status = 'failed'`).get(ref).n;
+}
+
+function releaseSmsDedup(id) {
+  db.prepare('UPDATE sms_log SET dedup_key = NULL WHERE id = ?').run(id);
+}
+
+// کمپینی که وسط ارسال مانده (مثلاً سرور ری‌استارت شده) نباید برای همیشه «در حال ارسال» بماند
+function failStaleSmsCampaigns() {
+  return db.prepare(`
+    UPDATE sms_campaigns SET status = 'failed', error = 'ارسال نیمه‌تمام ماند (سرور در میانه‌ی کار ری‌استارت شد).',
+      finished_at = datetime('now')
+    WHERE status = 'sending' AND started_at < datetime('now', '-30 minutes')
+  `).run().changes;
+}
+
+function listSmsLog(limit = 100) {
+  return db.prepare(`
+    SELECT l.id, l.shop_id, l.phone, l.kind, l.ref, l.status, l.error, l.created_at, s.owner_name, s.shop_name
+    FROM sms_log l LEFT JOIN shops s ON s.id = l.shop_id
+    ORDER BY l.id DESC LIMIT ?
+  `).all(limit);
+}
+
 function toPublicShop(shop) {
   if (!shop) return null;
   return {
@@ -1168,12 +1347,32 @@ function toPublicShop(shop) {
     telegram_connected: !!shop.telegram_bot_token_enc,
     telegram_bot_username: shop.telegram_bot_username || null,
     telegram_owner_linked: !!shop.telegram_owner_chat_id,
-    telegram_link_code: shop.telegram_link_code || null
+    telegram_link_code: shop.telegram_link_code || null,
+    sms_marketing_opt_out: !!shop.sms_marketing_opt_out
   };
 }
 
 module.exports = {
   db,
+  SMS_AUTOMATION_DEFAULTS,
+  setSmsMarketingOptOut,
+  listSmsAutomations,
+  getSmsAutomation,
+  updateSmsAutomation,
+  listSmsRecipients,
+  createSmsCampaign,
+  getSmsCampaign,
+  listSmsCampaigns,
+  dueSmsCampaigns,
+  claimSmsCampaign,
+  updateSmsCampaign,
+  cancelSmsCampaign,
+  reserveSmsLog,
+  completeSmsLog,
+  countSmsFailures,
+  releaseSmsDedup,
+  failStaleSmsCampaigns,
+  listSmsLog,
   encrypt,
   decrypt,
   getShopById,

@@ -16,7 +16,7 @@ const DRY = process.argv.includes('--dry');
 
 // Files that make up the app. DB files, .env and node_modules are never touched.
 const FILES = [
-  'server.js', 'db.js', 'knowledge.js', 'extract.js', 'products.js', 'scraper.js', 'billing.js', 'safeurl.js', 'telegram.js', 'widget.js', 'prompt.txt', 'index.html', 'dashboard.html',
+  'server.js', 'db.js', 'knowledge.js', 'extract.js', 'products.js', 'scraper.js', 'billing.js', 'safeurl.js', 'telegram.js', 'crm.js', 'widget.js', 'prompt.txt', 'index.html', 'dashboard.html',
   'package.json', 'package-lock.json', 'shop-data.json', 'test-widget.html', 'README.md',
   ...fs.readdirSync(path.join(ROOT, 'public')).map(f => 'public/' + f),
   ...fs.readdirSync(path.join(ROOT, 'scripts')).map(f => 'scripts/' + f),

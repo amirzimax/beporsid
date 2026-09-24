@@ -558,6 +558,23 @@
   .adm-table tbody tr.clickable { cursor: pointer; }
   .adm-table tbody tr.clickable:hover { background: var(--line-soft); }
   .adm-num { font-variant-numeric: tabular-nums; }
+
+  /* ---------- باشگاه مشتریان ---------- */
+  .crm-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+  .crm-strip { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+  .crm-strip .item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-soft); }
+  .crm-autos { display: grid; gap: 14px; }
+  .crm-auto { border: 1.5px solid var(--line); border-radius: 12px; padding: 14px; }
+  .crm-auto.on { border-color: var(--firooze); }
+  .crm-auto-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .crm-auto-head b { font-size: 14px; }
+  .crm-auto-head label { display: flex; align-items: center; gap: 7px; margin: 0; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; }
+  .crm-auto .actions { margin-top: 10px; }
+  .crm-vars { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px; }
+  .crm-vars button { border: 1px dashed var(--line); background: var(--card); color: var(--ink-soft); border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+  .crm-vars button:hover { border-color: var(--firooze); color: var(--firooze-deep); }
+  input[type="datetime-local"] { width: 100%; padding: 10px 13px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--card); font-family: inherit; font-size: 14px; color: var(--ink); }
+  @media (max-width: 560px) { .crm-row { grid-template-columns: 1fr; } }
   .adm-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 14px; }
   .adm-kv { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
   .adm-kv > div { border: 1px solid var(--line-soft); border-radius: 10px; padding: 10px 12px; }
@@ -883,6 +900,14 @@
             <button class="btn btn-primary" onclick="saveSettings('support-status', this)">ذخیره</button>
             <div id="support-status" class="status"></div>
           </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><div><h2>پیامک‌های بپرسید</h2><p class="muted">پیام‌های مربوط به حساب شما (مثل یادآوری تمدید اشتراک) همیشه ارسال می‌شوند.</p></div></div>
+          <label style="display:flex;align-items:center;gap:8px;font-weight:500;font-size:13.5px;cursor:pointer">
+            <input type="checkbox" id="sms_marketing" style="width:16px;height:16px" onchange="saveSmsPreference(this)" />
+            دریافت پیامک‌های مناسبتی، تخفیف‌ها و خبرهای بپرسید
+          </label>
         </div>
       </section>
 
@@ -1473,12 +1498,79 @@
           </div>
         </div>
 
-        <div class="seg" style="max-width:520px;margin-bottom:18px">
+        <div class="seg" style="max-width:660px;margin-bottom:18px">
           <button class="active" data-atab="overview" onclick="adminTab('overview')">نمای کلی</button>
           <button data-atab="shops" onclick="adminTab('shops')">فروشگاه‌ها</button>
           <button data-atab="tickets" onclick="adminTab('tickets')">تیکت‌ها <span id="adm-tk-count" class="nav-badge hidden">۰</span></button>
           <button data-atab="payments" onclick="adminTab('payments')">پرداخت‌ها</button>
           <button data-atab="conversations" onclick="adminTab('conversations')">گفتگوها</button>
+          <button data-atab="crm" onclick="adminTab('crm')">باشگاه مشتریان</button>
+        </div>
+
+        <!-- باشگاه مشتریان -->
+        <div data-apanel="crm" class="hidden">
+          <div id="crm-status"></div>
+
+          <div class="card">
+            <div class="card-head"><div><h2>پیام‌های خودکار</h2><p class="muted">از خط خدماتی و فقط بین ساعت ۹ تا ۲۱ ارسال می‌شوند (به‌جز خوش‌آمد که بلافاصله بعد از ثبت‌نام می‌رود). هر یادآوری برای هر دوره‌ی اشتراک فقط یک بار فرستاده می‌شود.</p></div></div>
+            <div id="crm-autos" class="crm-autos"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><div><h2>کمپین جدید</h2><p class="muted">پیامک مناسبتی یا تبلیغاتی به یک گروه از کاربران. از خط تبلیغاتی و با «لغو۱۱» ارسال می‌شود و به کسانی که انصراف داده‌اند نمی‌رسد.</p></div></div>
+            <div class="crm-row">
+              <div class="field">
+                <label for="crm-title">عنوان کمپین <span class="fine">(فقط برای خودتان)</span></label>
+                <input type="text" id="crm-title" maxlength="120" placeholder="مثلاً تخفیف یلدا" />
+              </div>
+              <div class="field">
+                <label for="crm-kind">نوع</label>
+                <select id="crm-kind">
+                  <option value="occasion">مناسبتی</option>
+                  <option value="promo">تبلیغاتی</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="crm-audience">گیرندگان</label>
+              <select id="crm-audience" onchange="crmAudienceChanged()"></select>
+              <div class="fine" id="crm-audience-hint" style="margin-top:6px"></div>
+            </div>
+            <div class="field">
+              <label for="crm-body">متن پیام</label>
+              <textarea id="crm-body" maxlength="700" oninput="crmCount('crm-body', 'crm-body-count', true)" placeholder="مثلاً: {name} عزیز، یلدا مبارک! تا پایان هفته ۳۰٪ تخفیف ارتقای پلن: {link}"></textarea>
+              <div class="crm-vars" data-target="crm-body"></div>
+              <div class="fine" id="crm-body-count"></div>
+            </div>
+            <div class="field">
+              <label>زمان ارسال</label>
+              <div class="choice-list">
+                <input type="radio" name="crm_when" id="crm-when-now" value="now" checked onchange="crmWhenChanged()">
+                <label for="crm-when-now">همین حالا <span class="fine">(بیرون از ساعت ۹ تا ۲۱، ساعت ۹ صبح بعد ارسال می‌شود)</span></label>
+                <input type="radio" name="crm_when" id="crm-when-later" value="later" onchange="crmWhenChanged()">
+                <label for="crm-when-later">زمان‌بندی</label>
+              </div>
+              <input type="datetime-local" id="crm-at" dir="ltr" class="hidden" style="margin-top:10px;max-width:260px" />
+            </div>
+            <div class="actions">
+              <button class="btn btn-primary" onclick="crmCreateCampaign(this)">ثبت کمپین</button>
+              <button class="btn btn-outline" onclick="crmTest('crm-body', 'ads', this)">ارسال آزمایشی برای خودم</button>
+              <div id="crm-campaign-status" class="status"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><div><h2>کمپین‌ها</h2></div></div>
+            <div class="adm-wrap"><div id="crm-campaigns"></div></div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <div><h2>گزارش ارسال‌ها</h2><p class="muted">۱۰۰ پیامک آخر.</p></div>
+              <button class="btn btn-outline" onclick="crmLoadLog(this)">نمایش</button>
+            </div>
+            <div class="adm-wrap"><div id="crm-log"></div></div>
+          </div>
         </div>
 
         <!-- نمای کلی -->
@@ -1862,6 +1954,7 @@
     document.querySelectorAll('[data-avatar]').forEach(el => el.textContent = (ownerName || s.shop_name || identityLine || 'گ').trim().charAt(0).toUpperCase());
 
     $('shop_name').value = s.shop_name || '';
+    $('sms_marketing').checked = !s.sms_marketing_opt_out;
     syncColor(s.theme_color || '#12807a');
     $('shipping_policy').value = s.shipping_policy || '';
     $('returns_policy').value = s.returns_policy || '';
@@ -3126,6 +3219,239 @@
     else if (adminState.tab === 'tickets') loadAdminTickets();
     else if (adminState.tab === 'payments') loadAdminPayments();
     else if (adminState.tab === 'conversations') loadAdminConvs();
+    else if (adminState.tab === 'crm') loadAdminCrm();
+  }
+
+  /* ---------- باشگاه مشتریان ---------- */
+  const CRM_AUTO_LABELS = {
+    welcome: ['خوش‌آمد', 'بلافاصله بعد از ثبت‌نام'],
+    renew_7: ['یادآوری تمدید (۷ روز مانده)', 'برای مشترکان پلن پولی، یک هفته قبل از پایان اشتراک'],
+    renew_1: ['یادآوری تمدید (۱ روز مانده)', 'روز آخر اشتراک'],
+    expired: ['پایان اشتراک', 'تا ۳ روز بعد از پایان اشتراک، اگر تمدید نکرده باشد']
+  };
+  const CRM_STATUS = {
+    scheduled: ['زمان‌بندی‌شده', 'pending'], sending: ['در حال ارسال', 'pending'],
+    sent: ['ارسال‌شده', 'connected'], failed: ['ناموفق', 'disconnected'], canceled: ['لغو‌شده', '']
+  };
+  const CRM_LOG_KIND = { welcome: 'خوش‌آمد', renew_7: 'یادآوری ۷ روزه', renew_1: 'یادآوری ۱ روزه', expired: 'پایان اشتراک', campaign: 'کمپین', test: 'آزمایشی' };
+  const CRM_OPT_OUT = '\nلغو۱۱';
+  let crmData = null;
+
+  // تعداد بخش‌های پیامک (هزینه به ازای هر بخش): فارسی تک‌بخشی ۷۰ نویسه، چندبخشی هر بخش ۶۷
+  function smsParts(text) {
+    const len = [...text].length;
+    if (!len) return 0;
+    if (/[^\x00-\x7F]/.test(text)) return len <= 70 ? 1 : Math.ceil(len / 67);
+    return len <= 160 ? 1 : Math.ceil(len / 153);
+  }
+  function crmCount(inputId, outId, ads) {
+    const t = $(inputId).value.trim() + (ads ? CRM_OPT_OUT : '');
+    $(outId).textContent = `${fa([...t].length)} نویسه · ${fa(smsParts(t))} پیامک` +
+      (/\{(name|shop|link|expiry|plan|days)\}/.test(t) ? ' (تقریبی؛ متغیرها با مقدار واقعی جایگزین می‌شوند)' : '') +
+      (ads ? ' · «لغو۱۱» خودکار به انتها اضافه می‌شود' : '');
+  }
+  function crmVarChips() {
+    document.querySelectorAll('.crm-vars').forEach(box => {
+      box.innerHTML = Object.entries(crmData.variables).map(([k, label]) =>
+        `<button type="button" title="${esc(label)}" onclick="crmInsertVar('${box.dataset.target}', '{${k}}')">${esc(label)}</button>`).join('');
+    });
+  }
+  function crmInsertVar(id, token) {
+    const el = $(id);
+    const s = el.selectionStart == null ? el.value.length : el.selectionStart;
+    el.value = el.value.slice(0, s) + token + el.value.slice(el.selectionEnd == null ? s : el.selectionEnd);
+    el.focus(); el.selectionStart = el.selectionEnd = s + token.length;
+    el.dispatchEvent(new Event('input'));
+  }
+
+  async function loadAdminCrm() {
+    $('crm-status').innerHTML = '<div class="card"><div class="kb-empty">در حال دریافت…</div></div>';
+    try {
+      crmData = await api('/api/admin/crm');
+    } catch (e) {
+      $('crm-status').innerHTML = `<div class="card"><div class="kb-empty"><span class="error">${esc(e.message)}</span></div></div>`;
+      return;
+    }
+    const st = crmData.status;
+    const flag = (ok, label) => `<span class="item"><span class="badge ${ok ? 'connected' : 'disconnected'}">${ok ? 'تنظیم شده' : 'تنظیم نشده'}</span>${label}</span>`;
+    const credit = crmData.credit && crmData.credit.remaincredit != null
+      ? `<span class="item">اعتبار کاوه‌نگار: <b class="adm-num">${fmtNum(Math.floor(crmData.credit.remaincredit / 10))}</b> تومان</span>` : '';
+    const missing = !st.service_sender || !st.ads_sender;
+    $('crm-status').innerHTML = `<div class="card">
+      <div class="crm-strip">
+        ${flag(st.service_sender, 'خط خدماتی')}
+        ${flag(st.ads_sender, 'خط تبلیغاتی')}
+        ${credit}
+        <span class="item">${st.in_sending_hours ? 'الان در ساعت مجاز ارسال هستیم' : 'الان بیرون از ساعت مجاز ارسال (۹ تا ۲۱) هستیم'}</span>
+      </div>
+      ${missing ? `<p class="fine" style="margin-top:10px">شماره‌ی خطوط کاوه‌نگار را در فایل <code>.env</code> سرور با <code dir="ltr">KAVENEGAR_SENDER</code> (خط خدماتی) و <code dir="ltr">KAVENEGAR_ADS_SENDER</code> (خط تبلیغاتی) تنظیم کنید و سرور را ری‌استارت کنید.</p>` : ''}
+    </div>`;
+
+    const byKey = Object.fromEntries(crmData.automations.map(a => [a.key, a]));
+    $('crm-autos').innerHTML = Object.keys(CRM_AUTO_LABELS).filter(k => byKey[k]).map(k => {
+      const a = byKey[k];
+      return `<div class="crm-auto ${a.enabled ? 'on' : ''}" id="crm-auto-${k}">
+        <div class="crm-auto-head">
+          <div><b>${esc(CRM_AUTO_LABELS[k][0])}</b><div class="fine">${esc(CRM_AUTO_LABELS[k][1])}</div></div>
+          <label><input type="checkbox" id="crm-en-${k}" ${a.enabled ? 'checked' : ''} style="width:16px;height:16px" /> فعال</label>
+        </div>
+        <textarea id="crm-txt-${k}" maxlength="500" oninput="crmCount('crm-txt-${k}', 'crm-cnt-${k}', false)">${esc(a.body)}</textarea>
+        <div class="crm-vars" data-target="crm-txt-${k}"></div>
+        <div class="fine" id="crm-cnt-${k}"></div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="crmSaveAuto('${k}', this)">ذخیره</button>
+          <button class="btn btn-outline" onclick="crmTest('crm-txt-${k}', 'service', this)">ارسال آزمایشی برای خودم</button>
+          <div id="crm-auto-st-${k}" class="status"></div>
+        </div>
+      </div>`;
+    }).join('');
+    Object.keys(byKey).forEach(k => $('crm-cnt-' + k) && crmCount('crm-txt-' + k, 'crm-cnt-' + k, false));
+
+    const sel = $('crm-audience');
+    const prev = sel.value;
+    sel.innerHTML = crmData.audiences.map(a => `<option value="${a.key}">${esc(a.label)} (${fmtNum(a.reachable)} نفر)</option>`).join('');
+    if (prev) sel.value = prev;
+    crmAudienceChanged();
+    crmVarChips();
+    crmCount('crm-body', 'crm-body-count', true);
+    renderCrmCampaigns();
+  }
+
+  function crmAudience() {
+    return crmData && crmData.audiences.find(a => a.key === $('crm-audience').value);
+  }
+  function crmAudienceChanged() {
+    const a = crmAudience();
+    if (!a) return;
+    const out = a.total - a.reachable;
+    $('crm-audience-hint').textContent = `${fmtNum(a.reachable)} نفر پیام را دریافت می‌کنند` +
+      (out ? ` · ${fmtNum(out)} نفر از پیامک‌های تبلیغاتی انصراف داده‌اند و پیامی نمی‌گیرند.` : '.');
+  }
+  function crmWhenChanged() {
+    $('crm-at').classList.toggle('hidden', !$('crm-when-later').checked);
+  }
+
+  function renderCrmCampaigns() {
+    const box = $('crm-campaigns');
+    const list = crmData.campaigns;
+    if (!list.length) { box.innerHTML = '<div class="kb-empty">هنوز کمپینی ثبت نشده.</div>'; return; }
+    const audLabel = k => (crmData.audiences.find(a => a.key === k) || {}).label || k;
+    box.innerHTML = `<table class="adm-table">
+      <thead><tr><th>عنوان</th><th>نوع</th><th>گیرندگان</th><th>زمان ارسال</th><th>وضعیت</th><th>ارسال / ناموفق</th><th></th></tr></thead>
+      <tbody>${list.map(c => {
+        const [label, cls] = CRM_STATUS[c.status] || [c.status, ''];
+        return `<tr title="${esc(c.body)}">
+          <td>${esc(c.title)}</td>
+          <td>${c.kind === 'promo' ? 'تبلیغاتی' : 'مناسبتی'}</td>
+          <td>${esc(audLabel(c.audience))}</td>
+          <td>${esc(fullTime(c.scheduled_at))}</td>
+          <td><span class="badge ${cls}">${esc(label)}</span>${c.error ? `<div class="fine error" style="white-space:normal;max-width:260px">${esc(c.error)}</div>` : ''}</td>
+          <td class="adm-num">${c.total ? `${fmtNum(c.sent)} از ${fmtNum(c.total)}${c.failed ? ' / ' + fmtNum(c.failed) : ''}` : '—'}</td>
+          <td>${c.status === 'scheduled' ? `<button class="btn btn-ghost" onclick="crmCancel(${c.id}, this)">لغو</button>` : ''}</td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+  }
+
+  async function crmSaveAuto(key, btn) {
+    busy(btn, true);
+    try {
+      const { automation } = await api('/api/admin/crm/automations/' + key, {
+        method: 'POST', json: { enabled: $('crm-en-' + key).checked, body: $('crm-txt-' + key).value }
+      });
+      $('crm-auto-' + key).classList.toggle('on', automation.enabled);
+      toast(automation.enabled ? 'ذخیره شد؛ این پیام فعال است' : 'ذخیره شد؛ این پیام غیرفعال است');
+    } catch (e) {
+      toast(e.message, 'err');
+    } finally { busy(btn, false); }
+  }
+
+  async function crmTest(inputId, channel, btn) {
+    const body = $(inputId).value.trim();
+    if (!body) { toast('متن پیام خالی است', 'err'); return; }
+    busy(btn, true);
+    try {
+      const r = await api('/api/admin/crm/test', { method: 'POST', json: { body, channel } });
+      toast(`پیامک آزمایشی (${fa(r.parts)} بخش) به شماره‌ی شما ارسال شد`);
+    } catch (e) {
+      toast(e.message, 'err');
+    } finally { busy(btn, false); }
+  }
+
+  async function crmCreateCampaign(btn) {
+    const a = crmAudience();
+    const title = $('crm-title').value.trim();
+    const body = $('crm-body').value.trim();
+    if (!title) { toast('عنوان کمپین را وارد کنید', 'err'); return; }
+    if (!body) { toast('متن پیام خالی است', 'err'); return; }
+    if (!a || !a.reachable) { toast('این گروه هیچ گیرنده‌ای ندارد', 'err'); return; }
+    let scheduled_at = null;
+    if ($('crm-when-later').checked) {
+      const v = $('crm-at').value;
+      if (!v) { toast('زمان ارسال را انتخاب کنید', 'err'); return; }
+      scheduled_at = new Date(v).toISOString();
+    }
+    const parts = smsParts(body + CRM_OPT_OUT);
+    const ok = confirm(`این پیامک برای ${fa(a.reachable)} نفر (${a.label}) ${scheduled_at ? 'در زمان تعیین‌شده' : 'همین حالا'} ارسال می‌شود؛ حدود ${fa(a.reachable * parts)} پیامک.\nادامه می‌دهید؟`);
+    if (!ok) return;
+    busy(btn, true);
+    try {
+      const r = await api('/api/admin/crm/campaigns', {
+        method: 'POST',
+        json: { title, kind: $('crm-kind').value, audience: a.key, body, scheduled_at, confirm_count: a.reachable }
+      });
+      toast(r.deferred ? 'ثبت شد؛ چون بیرون از ساعت مجاز است، ساعت ۹ صبح ارسال می‌شود' : scheduled_at ? 'کمپین زمان‌بندی شد' : 'ارسال کمپین شروع شد');
+      $('crm-title').value = ''; $('crm-body').value = '';
+      setTimeout(loadAdminCrm, scheduled_at || r.deferred ? 0 : 2500);
+    } catch (e) {
+      toast(e.message, 'err');
+      loadAdminCrm();
+    } finally { busy(btn, false); }
+  }
+
+  async function crmCancel(id, btn) {
+    if (!confirm('این کمپین لغو شود؟')) return;
+    busy(btn, true);
+    try {
+      await api(`/api/admin/crm/campaigns/${id}/cancel`, { method: 'POST' });
+      toast('کمپین لغو شد');
+      loadAdminCrm();
+    } catch (e) {
+      toast(e.message, 'err');
+      busy(btn, false);
+    }
+  }
+
+  async function crmLoadLog(btn) {
+    const box = $('crm-log');
+    busy(btn, true);
+    try {
+      const { items } = await api('/api/admin/crm/log');
+      if (!items.length) { box.innerHTML = '<div class="kb-empty">هنوز پیامکی ارسال نشده.</div>'; return; }
+      box.innerHTML = `<table class="adm-table">
+        <thead><tr><th>زمان</th><th>نوع</th><th>گیرنده</th><th>موبایل</th><th>وضعیت</th></tr></thead>
+        <tbody>${items.map(l => `<tr>
+          <td>${esc(fullTime(l.created_at))}</td>
+          <td>${esc(CRM_LOG_KIND[l.kind] || l.kind)}</td>
+          <td>${esc(l.owner_name || l.shop_name || '—')}</td>
+          <td class="adm-num" dir="ltr">${esc(fa(l.phone))}</td>
+          <td>${l.status === 'sent' ? '<span class="badge connected">ارسال شد</span>'
+            : l.status === 'failed' ? `<span class="badge disconnected" title="${esc(l.error || '')}">ناموفق</span>`
+            : '<span class="badge pending">در انتظار</span>'}</td>
+        </tr>`).join('')}</tbody></table>`;
+    } catch (e) {
+      box.innerHTML = `<div class="kb-empty"><span class="error">${esc(e.message)}</span></div>`;
+    } finally { busy(btn, false); }
+  }
+
+  async function saveSmsPreference(el) {
+    try {
+      const d = await api('/api/sms-preferences', { method: 'POST', json: { marketing_opt_out: !el.checked } });
+      currentShop = d.shop;
+      toast(el.checked ? 'پیامک‌های مناسبتی و تخفیف‌ها برایتان ارسال می‌شود' : 'دیگر پیامک تبلیغاتی دریافت نمی‌کنید');
+    } catch (e) {
+      el.checked = !el.checked;
+      toast(e.message, 'err');
+    }
   }
 
   /* ---------- تیکت‌ها از دید مدیر ---------- */

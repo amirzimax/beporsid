@@ -15,6 +15,7 @@ const scraper = require('./scraper');
 const { extractText, SUPPORTED: SUPPORTED_DOCS } = require('./extract');
 const billing = require('./billing');
 const telegram = require('./telegram');
+const crm = require('./crm');
 // آپلود فایل‌های پایگاه دانش (docx/xlsx/pdf/txt) - حداکثر ۱۰ مگابایت
 const uploadDoc = multer({ storage: multer.memoryStorage(), limits: { fileSize: knowledge.LIMITS.file.maxBytes } });
 
@@ -91,7 +92,13 @@ const {
   consumeOtpCode,
   cleanupOldOtpCodes,
   decrypt,
-  toPublicShop
+  toPublicShop,
+  setSmsMarketingOptOut,
+  listSmsAutomations,
+  updateSmsAutomation,
+  listSmsCampaigns,
+  cancelSmsCampaign,
+  listSmsLog
 } = require('./db');
 
 const app = express();
@@ -1150,6 +1157,8 @@ app.post('/auth/otp/verify', otpVerifyLimiter, (req, res) => {
     // (مثلاً کسی اشتباهی برای شماره‌ی ثبت‌شده‌ی قبلی از فرم ثبت‌نام استفاده کنه)
     const name = typeof req.body.owner_name === 'string' ? req.body.owner_name.trim().slice(0, 120) : '';
     shop = createShopWithPhone(phone, name);
+    // پیامک خوش‌آمد نباید ورود را معطل یا خراب کند
+    crm.sendWelcome(shop).catch(e => console.error('خطای پیامک خوش‌آمد:', e.message));
   }
 
   const token = jwt.sign({ shopId: shop.id }, JWT_SECRET, { expiresIn: '30d' });
@@ -1292,6 +1301,75 @@ app.get('/api/admin/conversations/:id', adminOnly, (req, res) => {
   res.json({ conversation: conv });
 });
 
+// ==================== باشگاه مشتریان (پیامک به کاربران بپرسید) ====================
+
+const SMS_AUTOMATION_KEYS = ['welcome', 'renew_7', 'renew_1', 'expired'];
+
+app.get('/api/admin/crm', adminOnly, async (req, res) => {
+  res.json({
+    status: crm.status(),
+    credit: await crm.getCredit(),
+    automations: listSmsAutomations(),
+    campaigns: listSmsCampaigns(50),
+    audiences: crm.audienceCounts(),
+    variables: crm.VARIABLES
+  });
+});
+
+app.post('/api/admin/crm/automations/:key', adminOnly, (req, res) => {
+  const key = req.params.key;
+  if (!SMS_AUTOMATION_KEYS.includes(key)) return res.status(404).json({ error: 'پیام خودکار پیدا نشد.' });
+  const body = typeof req.body.body === 'string' ? req.body.body.trim() : '';
+  if (!body) return res.status(400).json({ error: 'متن پیام خالی است.' });
+  if (body.length > 500) return res.status(400).json({ error: 'متن پیام بیش از حد طولانی است (حداکثر ۵۰۰ نویسه).' });
+  res.json({ automation: updateSmsAutomation(key, { enabled: !!req.body.enabled, body }) });
+});
+
+app.post('/api/admin/crm/test', adminOnly, async (req, res) => {
+  const body = typeof req.body.body === 'string' ? req.body.body.trim() : '';
+  if (!body) return res.status(400).json({ error: 'متن پیام خالی است.' });
+  try {
+    res.json(await crm.sendTest(req.shop, body, req.body.channel === 'ads' ? 'ads' : 'service'));
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
+});
+
+app.post('/api/admin/crm/campaigns', adminOnly, (req, res) => {
+  const { title, kind, audience, body } = req.body;
+  const invalid = crm.validateCampaign({ title, kind, audience, body });
+  if (invalid) return res.status(400).json({ error: invalid });
+
+  let scheduledAt = null;
+  if (req.body.scheduled_at) {
+    const d = new Date(req.body.scheduled_at);
+    if (isNaN(d)) return res.status(400).json({ error: 'زمان ارسال نامعتبر است.' });
+    if (d < Date.now() - 60 * 1000) return res.status(400).json({ error: 'زمان ارسال گذشته است.' });
+    if (d > Date.now() + 90 * 86400000) return res.status(400).json({ error: 'حداکثر تا ۹۰ روز آینده می‌توانید زمان‌بندی کنید.' });
+    scheduledAt = d.toISOString().slice(0, 19).replace('T', ' ');
+  }
+
+  // مدیر تعداد گیرنده‌ها را دیده و تأیید کرده؛ اگر در این فاصله عوض شده، دوباره تأیید بگیرد
+  const count = crm.selectAudience(audience).length;
+  if (Number(req.body.confirm_count) !== count) {
+    return res.status(409).json({ error: `تعداد گیرنده‌ها به ${String(count).replace(/\d/g, x => '۰۱۲۳۴۵۶۷۸۹'[x])} نفر تغییر کرده است؛ دوباره تأیید کنید.`, count });
+  }
+  if (!count) return res.status(400).json({ error: 'این گروه هیچ گیرنده‌ای ندارد.' });
+
+  res.json(crm.scheduleCampaign({ title, kind, audience, body, scheduled_at: scheduledAt }));
+});
+
+app.post('/api/admin/crm/campaigns/:id/cancel', adminOnly, (req, res) => {
+  if (!cancelSmsCampaign(Number(req.params.id))) {
+    return res.status(400).json({ error: 'فقط کمپینی که هنوز ارسال نشده قابل لغو است.' });
+  }
+  res.json({ ok: true });
+});
+
+app.get('/api/admin/crm/log', adminOnly, (req, res) => {
+  res.json({ items: listSmsLog(100) });
+});
+
 // خروجی CSV برای کارهای بازاریابی (پیامک گروهی، دعوت به ارتقای پلن و...)
 // نکته‌ی امنیتی: سلولی که با = + - @ شروع شود را اکسل به‌عنوان فرمول اجرا می‌کند، پس
 // با یک آپاستروف خنثی می‌شود. BOM هم اضافه می‌شود وگرنه اکسل فارسی را خراب نشان می‌دهد.
@@ -1321,6 +1399,11 @@ app.get('/api/admin/export/shops.csv', adminOnly, (req, res) => {
 
 app.get('/api/me', requireAuth, (req, res) => {
   res.json({ shop: publicShop(req.shop) });
+});
+
+// انصراف از پیامک‌های تبلیغاتی و مناسبتی (پیام‌های خدماتی مثل یادآوری تمدید همچنان می‌رسند)
+app.post('/api/sms-preferences', requireAuth, (req, res) => {
+  res.json({ shop: publicShop(setSmsMarketingOptOut(req.shop.id, !!req.body.marketing_opt_out)) });
 });
 
 app.post('/api/settings', requireAuth, (req, res) => {
@@ -2528,6 +2611,8 @@ setInterval(() => {
   try { cleanupTelegramNotifications(); }
   catch (e) { console.error('خطای پاک‌سازی اعلان‌های تلگرام:', e.message); }
 }, 24 * 60 * 60 * 1000).unref();
+
+crm.startScheduler();
 
 app.listen(PORT, HOST, () => {
   console.log(`سرور چت‌بات روی ${HOST}:${PORT} در حال اجراست.`);
