@@ -202,6 +202,8 @@ if (!JWT_SECRET || JWT_SECRET.length < 32) {
 // آدرس عمومی خود سرور و پنل - برای ساخت callback_url زرین‌پال و ریدایرکت بعد از پرداخت
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || 'https://api.beporsid.com';
 const PUBLIC_DASHBOARD_URL = `${PUBLIC_BASE_URL}/dashboard.html`;
+// صفحه‌ای روی دامنه‌ی ثبت‌شده در ترمینال زرین‌پال که کاربر را به درگاه می‌فرستد (pay.html)
+const PAY_REDIRECT_BASE = process.env.PAY_REDIRECT_BASE || 'https://beporsid.com/pay.html';
 
 // اتصال به GapGPT (سرویس واسط ایرانی، فرمت سازگار با OpenAI) به‌جای اتصال مستقیم به Gemini
 const GAPGPT_API_KEY = process.env.GAPGPT_API_KEY;
@@ -1823,7 +1825,12 @@ app.post('/api/billing/checkout', requireAuth, async (req, res) => {
       email: /^phone-\d+@otp\.beporsid\.local$/.test(req.shop.email) ? undefined : req.shop.email
     });
     setPaymentAuthority(paymentId, authority);
-    res.json({ url: billing.STARTPAY_BASE + authority });
+    // درگاه واقعی فقط ورود از دامنه‌ی اصلی را می‌پذیرد؛ برای همین از صفحه‌ی pay.html روی
+    // beporsid.com رد می‌شویم. در حالت sandbox مستقیم می‌رویم.
+    const url = billing.STARTPAY_BASE.startsWith('https://www.zarinpal.com')
+      ? `${PAY_REDIRECT_BASE}?a=${encodeURIComponent(authority)}`
+      : billing.STARTPAY_BASE + authority;
+    res.json({ url });
   } catch (err) {
     markPaymentFailed(paymentId);
     res.status(500).json({ error: err.message || 'خطا در اتصال به درگاه پرداخت.' });

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<!-- زرین‌پال فقط ورود از دامنه‌ی ثبت‌شده‌ی ترمینال (beporsid.com) را می‌پذیرد و این را از
+     Referer می‌فهمد؛ پنل روی api.beporsid.com است و Referer نمی‌فرستد، پس هدایت به درگاه از
+     این صفحه انجام می‌شود. فقط origin فرستاده می‌شود تا کد تراکنش در Referer نرود. -->
+<meta name="referrer" content="origin">
+<title>انتقال به درگاه پرداخت</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+  :root { --bg: #f6f8f8; --ink: #17302f; --soft: #5b7176; --accent: #12807a; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #0f1a1a; --ink: #e6efee; --soft: #9fb3b1; } }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--ink);
+    font-family: Vazirmatn, Tahoma, sans-serif; text-align: center; padding: 16px; box-sizing: border-box; }
+  .spin { width: 34px; height: 34px; border: 3px solid rgba(18,128,122,.2); border-top-color: var(--accent);
+    border-radius: 50%; margin: 0 auto 16px; animation: r .8s linear infinite; }
+  @keyframes r { to { transform: rotate(360deg); } }
+  p { color: var(--soft); font-size: 14px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div>
+  <div class="spin" id="spin"></div>
+  <h1 style="font-size:18px" id="msg">در حال انتقال به درگاه امن زرین‌پال…</h1>
+  <p id="sub">لطفاً چند لحظه صبر کنید.</p>
+</div>
+<script>
+  (function () {
+    var a = new URLSearchParams(location.search).get('a') || '';
+    // فقط کد تراکنش معتبر زرین‌پال؛ این صفحه نباید به آدرس دلخواه ریدایرکت کند
+    if (/^[AS][0-9A-Za-z]{20,64}$/.test(a)) {
+      location.replace('https://www.zarinpal.com/pg/StartPay/' + a);
+    } else {
+      document.getElementById('spin').style.display = 'none';
+      document.getElementById('msg').textContent = 'لینک پرداخت نامعتبر است.';
+      document.getElementById('sub').innerHTML = 'لطفاً از <a href="https://api.beporsid.com/dashboard.html#billing">پنل بپرسید</a> دوباره اقدام کنید.';
+    }
+  })();
+</script>
+</body>
+</html>
