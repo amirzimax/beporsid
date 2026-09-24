@@ -7,7 +7,7 @@
 // پیامک خودکار «weekly_report» در باشگاه مشتریان، که پیش‌فرض خاموش است.
 
 const {
-  periodStats, listWeeklyReportShops, claimWeeklyReport, getMonthlyUsage, decrypt
+  periodStats, listWeeklyReportShops, claimWeeklyReport, getMonthlyUsage, countOpenKnowledgeGaps, decrypt
 } = require('./db');
 const billing = require('./billing');
 const telegram = require('./telegram');
@@ -71,6 +71,8 @@ function buildReport(shop, w) {
   if (plan.free && usedPct >= 80) {
     lines.push('⚠️ سهمیه‌ی ماهانه رو به اتمام است؛ برای اینکه دستیار وسط ماه از جواب دادن نماند، پلن را ارتقا دهید.');
   }
+  const gaps = countOpenKnowledgeGaps(shop.id);
+  if (gaps) lines.push(`📝 ${fa(gaps)} سؤال مشتری بی‌جواب ماند؛ جوابشان را در «پایگاه دانش» اضافه کنید تا دفعه‌ی بعد دستیار جواب بدهد.`);
   if (!s.conversations && p.conversations) {
     lines.push('⚠️ این هفته هیچ گفتگویی ثبت نشد. ویجت هنوز روی سایت هست؟ «وضعیت نصب» را در پنل ببینید.');
   }

@@ -1188,6 +1188,31 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_sms_log_created ON sms_log(created_at DESC);
 `);
 
+// سؤال‌هایی که دستیار جوابشان را نداشت. سؤال تکراری (بعد از نرمال‌سازی) روی همان ردیف باز
+// شمرده می‌شود تا صاحب فروشگاه ببیند کدام سؤال بیشتر پرسیده شده.
+//   kind: knowledge = جواب در اطلاعات فروشگاه نبود | product = محصول پیدا نشد
+//   status: open | answered | dismissed
+db.exec(`
+  CREATE TABLE IF NOT EXISTS knowledge_gaps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shop_id INTEGER NOT NULL,
+    norm TEXT NOT NULL,
+    question TEXT NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'knowledge',
+    query TEXT,
+    reply TEXT,
+    conversation_id INTEGER,
+    count INTEGER NOT NULL DEFAULT 1,
+    status TEXT NOT NULL DEFAULT 'open',
+    knowledge_item_id INTEGER,
+    created_at TEXT DEFAULT (datetime('now')),
+    last_asked_at TEXT DEFAULT (datetime('now')),
+    resolved_at TEXT
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_gaps_open ON knowledge_gaps(shop_id, norm) WHERE status = 'open';
+  CREATE INDEX IF NOT EXISTS idx_gaps_shop ON knowledge_gaps(shop_id, status, last_asked_at DESC);
+`);
+
 const SMS_AUTOMATION_DEFAULTS = {
   welcome: '{name} عزیز، به بپرسید خوش آمدید!\nدستیار هوش مصنوعی فروشگاهتان آماده است؛ هر ماه ۲۰۰ پاسخ رایگان دارید.\nشروع: {link}',
   renew_7: '{name} عزیز، اشتراک «{plan}» بپرسید {days} روز دیگر ({expiry}) به پایان می‌رسد.\nبرای اینکه پاسخ‌گویی چت‌بات قطع نشود تمدید کنید:\n{link}',
@@ -1225,8 +1250,7 @@ function periodStats(shopId, from, to) {
       COUNT(DISTINCT CASE WHEN COALESCE(c.customer_phone, '') <> '' THEN c.id END) AS leads,
       COUNT(DISTINCT CASE WHEN c.needs_agent = 1 THEN c.id END) AS handoffs
     FROM messages m JOIN conversations c ON c.id = m.conversation_id
-    WHERE c.shop_id = ? AND m.created_at >= ? AND m.created_at < ?
-      AND COALESCE(c.page_url, '') NOT LIKE '%://api.beporsid.com%'
+    WHERE c.shop_id = ? AND m.created_at >= ? AND m.created_at < ? AND ${REAL_CONV}
   `).get(shopId, from, to);
   return r;
 }
@@ -1237,6 +1261,43 @@ function listWeeklyReportShops() {
       telegram_bot_token_enc, telegram_owner_chat_id
     FROM shops WHERE COALESCE(weekly_report_opt_out, 0) = 0
   `).all();
+}
+
+// ---------- سؤال‌های بی‌جواب ----------
+function recordKnowledgeGap({ shopId, norm, question, kind, query, reply, conversationId }) {
+  db.prepare(`
+    INSERT INTO knowledge_gaps (shop_id, norm, question, kind, query, reply, conversation_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(shop_id, norm) WHERE status = 'open' DO UPDATE SET
+      count = count + 1, last_asked_at = datetime('now'),
+      question = excluded.question, reply = excluded.reply, conversation_id = excluded.conversation_id,
+      query = COALESCE(excluded.query, query),
+      -- «جواب در اطلاعات نبود» مهم‌تر از «محصول پیدا نشد» است و جایگزینش می‌شود، نه برعکس
+      kind = CASE WHEN excluded.kind = 'knowledge' THEN 'knowledge' ELSE kind END
+  `).run(shopId, norm, question, kind, query || null, reply || null, conversationId || null);
+}
+
+function listKnowledgeGaps(shopId, status = 'open', limit = 100) {
+  return db.prepare(`
+    SELECT id, question, kind, query, reply, conversation_id, count, status, created_at, last_asked_at, resolved_at
+    FROM knowledge_gaps WHERE shop_id = ? AND status = ?
+    ORDER BY count DESC, last_asked_at DESC LIMIT ?
+  `).all(shopId, status, limit);
+}
+
+function countOpenKnowledgeGaps(shopId) {
+  return db.prepare(`SELECT COUNT(*) AS n FROM knowledge_gaps WHERE shop_id = ? AND status = 'open'`).get(shopId).n;
+}
+
+function getKnowledgeGap(shopId, id) {
+  return db.prepare('SELECT * FROM knowledge_gaps WHERE id = ? AND shop_id = ?').get(id, shopId) || null;
+}
+
+function resolveKnowledgeGap(shopId, id, status, knowledgeItemId) {
+  return db.prepare(`
+    UPDATE knowledge_gaps SET status = ?, knowledge_item_id = ?, resolved_at = datetime('now')
+    WHERE id = ? AND shop_id = ? AND status = 'open'
+  `).run(status, knowledgeItemId || null, id, shopId).changes > 0;
 }
 
 // «برداشتن» گزارش این هفته به‌صورت اتمیک، تا با ری‌استارت یا اجرای دوباره دو بار فرستاده نشود
@@ -1262,8 +1323,10 @@ function updateSmsAutomation(key, { enabled, body }) {
 }
 
 // ---------- قیف فعال‌سازی ----------
-// گفتگو یا لود ویجت «واقعی» یعنی روی سایت خود فروشگاه، نه پیش‌نمایش داخل پنل (api.beporsid.com)
-const REAL_CONV = `c.page_url IS NOT NULL AND c.page_url NOT LIKE '%://api.beporsid.com%'`;
+// گفتگو یا لود ویجت «واقعی» یعنی روی سایت خود فروشگاه، نه پیش‌نمایش داخل پنل (api.beporsid.com).
+// گفتگوهای تلگرام page_url='telegram' دارند: گفتگوی واقعی‌اند ولی نشانه‌ی نصب ویجت نیستند.
+const WEB_CONV = `c.page_url LIKE 'http%' AND c.page_url NOT LIKE '%://api.beporsid.com%'`;
+const REAL_CONV = `COALESCE(c.page_url, '') NOT LIKE '%://api.beporsid.com%'`;
 const ACTIVATION_COLUMNS = `
   (COALESCE(s.shopfa_password_enc, '') <> '' OR COALESCE(s.woo_consumer_secret_enc, '') <> ''
     OR COALESCE(s.portal_password_enc, '') <> '') AS store_connected,
@@ -1272,7 +1335,7 @@ const ACTIVATION_COLUMNS = `
     OR EXISTS (SELECT 1 FROM products p WHERE p.shop_id = s.id)
     OR EXISTS (SELECT 1 FROM knowledge_items k WHERE k.shop_id = s.id)) AS is_setup,
   (s.widget_seen_at IS NOT NULL
-    OR EXISTS (SELECT 1 FROM conversations c WHERE c.shop_id = s.id AND ${REAL_CONV})) AS is_installed,
+    OR EXISTS (SELECT 1 FROM conversations c WHERE c.shop_id = s.id AND ${WEB_CONV})) AS is_installed,
   EXISTS (SELECT 1 FROM conversations c WHERE c.shop_id = s.id AND ${REAL_CONV} AND c.message_count > 0) AS has_conversation,
   EXISTS (SELECT 1 FROM payments pay WHERE pay.shop_id = s.id AND pay.status = 'paid') AS has_paid`;
 
@@ -1495,6 +1558,11 @@ module.exports = {
   periodStats,
   listWeeklyReportShops,
   claimWeeklyReport,
+  recordKnowledgeGap,
+  listKnowledgeGaps,
+  countOpenKnowledgeGaps,
+  getKnowledgeGap,
+  resolveKnowledgeGap,
   encrypt,
   decrypt,
   getShopById,

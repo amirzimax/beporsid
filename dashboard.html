@@ -492,6 +492,18 @@
 
   /* ---------- knowledge base ---------- */
   .kb-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+  /* سؤال‌های بی‌جواب */
+  .gaps { display: grid; gap: 10px; }
+  .gap { border: 1.5px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .gap-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .gap-q { font-weight: 600; font-size: 14px; line-height: 1.8; overflow-wrap: anywhere; }
+  .gap-count { flex: none; background: var(--firooze-mist); color: var(--firooze-deep); font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; white-space: nowrap; }
+  .gap details { margin-top: 6px; font-size: 13px; color: var(--ink-soft); }
+  .gap details summary { cursor: pointer; font-size: 12.5px; }
+  .gap details div { margin-top: 6px; background: var(--line-soft); border-radius: 8px; padding: 8px 10px; line-height: 1.8; white-space: pre-wrap; }
+  .gap-form { margin-top: 12px; }
+  .gap .actions { margin-top: 10px; }
+  .nav-badge.soft { background: var(--firooze); }
   .kb-tabs button {
     display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 999px;
     border: 1.5px solid var(--line); background: var(--card); font-family: inherit; font-size: 13.5px; font-weight: 600;
@@ -1057,6 +1069,14 @@
         <div class="topbar">
           <div><h1>پایگاه دانش</h1><p class="muted">هر چیزی که می‌خواهید چت‌بات علاوه بر محصولات و قوانین بداند. برای هر پیام مشتری، فقط بخش‌های مرتبط به مدل داده می‌شود.</p></div>
           <div class="topbar-actions"><span class="badge pending" id="kb-summary">—</span></div>
+        </div>
+
+        <div class="card" id="gaps-card">
+          <div class="card-head"><div>
+            <h2>سؤال‌های بی‌جواب مشتری‌ها</h2>
+            <p class="muted">دستیار برای این سؤال‌ها جوابی در اطلاعات شما پیدا نکرد. یک جواب کوتاه بنویسید تا به پایگاه دانش اضافه شود و دفعه‌ی بعد خودش جواب بدهد.</p>
+          </div></div>
+          <div id="gaps-list"><div class="kb-empty">در حال دریافت…</div></div>
         </div>
 
         <div class="kb-tabs" id="kb-tabs">
@@ -1793,7 +1813,9 @@
     return NAV.filter(n => !n.adminOnly || (currentShop && currentShop.is_admin));
   }
   function renderNav() {
-    const html = visibleNav().map(n => `<a href="#${n.id}" data-nav="${n.id}" onclick="go('${n.id}'); return false;">${n.icon}<span>${n.label}</span></a>`).join('');
+    // تعداد سؤال‌های بی‌جواب کنار «دانش تکمیلی»؛ منوی دسکتاپ و موبایل هر دو نسخه‌ی خودشان را دارند
+    const badge = id => id === 'knowledge' ? '<span class="nav-badge soft hidden" data-gaps-badge></span>' : '';
+    const html = visibleNav().map(n => `<a href="#${n.id}" data-nav="${n.id}" onclick="go('${n.id}'); return false;">${n.icon}<span>${n.label}</span>${badge(n.id)}</a>`).join('');
     $('nav-desktop').innerHTML = html; $('nav-mobile').innerHTML = html;
   }
 
@@ -2075,6 +2097,7 @@
     renderOverview();
     loadStats();
     loadKnowledge();
+    loadGaps();
     loadProducts(true);
     loadBillingStatus();
     loadBillingPlans();
@@ -2535,6 +2558,102 @@
     kb.tab = tab;
     document.querySelectorAll('#kb-tabs button').forEach(b => b.classList.toggle('active', b.dataset.kb === tab));
     document.querySelectorAll('[data-kb-panel]').forEach(p => p.classList.toggle('hidden', p.dataset.kbPanel !== tab));
+  }
+
+  /* ---------- سؤال‌های بی‌جواب ---------- */
+  const GAP_KIND = {
+    knowledge: 'جوابش در اطلاعات شما نبود',
+    product: 'محصولی با این مشخصات پیدا نشد'
+  };
+  let gaps = [];
+
+  function setGapsBadge(n) {
+    document.querySelectorAll('[data-gaps-badge]').forEach(el => {
+      el.textContent = fa(n);
+      el.classList.toggle('hidden', !n);
+    });
+  }
+
+  async function loadGaps() {
+    try {
+      const d = await api('/api/knowledge-gaps');
+      gaps = d.items;
+      setGapsBadge(d.open_count);
+      renderGaps();
+    } catch (e) {
+      $('gaps-list').innerHTML = `<div class="kb-empty"><span class="error">${esc(e.message)}</span></div>`;
+    }
+  }
+
+  function renderGaps() {
+    const box = $('gaps-list');
+    if (!gaps.length) {
+      box.innerHTML = '<div class="kb-empty">فعلاً سؤال بی‌جوابی نیست. هر وقت دستیار جواب سؤالی را نداشته باشد، این‌جا می‌آید.</div>';
+      return;
+    }
+    box.innerHTML = `<div class="gaps">${gaps.map(g => `
+      <div class="gap" id="gap-${g.id}">
+        <div class="gap-head">
+          <div class="gap-q">«${esc(g.question)}»</div>
+          ${g.count > 1 ? `<span class="gap-count">${fa(g.count)} بار پرسیده شد</span>` : ''}
+        </div>
+        <div class="fine">${esc(GAP_KIND[g.kind] || '')}${g.kind === 'product' && g.query ? ` (جست‌وجو: ${esc(g.query)})` : ''} · آخرین بار ${esc(relTime(g.last_asked_at))}</div>
+        ${g.kind === 'product' ? '<div class="fine" style="margin-top:4px">اگر این محصول را دارید، بخش «اتصال فروشگاه» یا محصولات را بررسی کنید؛ اگر ندارید، می‌توانید جواب بنویسید (مثلاً محصول جایگزین).</div>' : ''}
+        ${g.reply ? `<details><summary>جوابی که دستیار داد</summary><div>${esc(g.reply)}</div></details>` : ''}
+        <div class="gap-form hidden" id="gap-form-${g.id}">
+          <div class="field">
+            <label for="gap-q-${g.id}">پرسش <span class="fine">(می‌توانید کوتاه‌ترش کنید)</span></label>
+            <input type="text" id="gap-q-${g.id}" maxlength="300" value="${esc(g.question)}" />
+          </div>
+          <div class="field">
+            <label for="gap-a-${g.id}">جواب شما</label>
+            <textarea id="gap-a-${g.id}" maxlength="2000" placeholder="جواب را همان‌طور بنویسید که می‌خواهید دستیار به مشتری بگوید."></textarea>
+          </div>
+        </div>
+        <div class="actions" id="gap-actions-${g.id}">
+          <button class="btn btn-primary" onclick="gapAnswer(${g.id}, this)">نوشتن جواب</button>
+          <button class="btn btn-ghost" onclick="gapDismiss(${g.id}, this)">نادیده گرفتن</button>
+          ${g.conversation_id ? `<button class="btn btn-ghost" onclick="go('conversations'); openConversation(${g.conversation_id})">مشاهده‌ی گفتگو</button>` : ''}
+        </div>
+      </div>`).join('')}</div>`;
+  }
+
+  // دکمه‌ی اول بار فرم را باز می‌کند و بار دوم جواب را ذخیره می‌کند
+  async function gapAnswer(id, btn) {
+    const form = $('gap-form-' + id);
+    if (form.classList.contains('hidden')) {
+      form.classList.remove('hidden');
+      btn.textContent = 'ذخیره در پایگاه دانش';
+      $('gap-a-' + id).focus();
+      return;
+    }
+    const answer = $('gap-a-' + id).value.trim();
+    if (!answer) { toast('متن جواب را بنویسید', 'err'); return; }
+    busy(btn, true);
+    try {
+      const d = await api(`/api/knowledge-gaps/${id}/answer`, { method: 'POST', json: { question: $('gap-q-' + id).value.trim(), answer } });
+      gaps = gaps.filter(g => g.id !== id);
+      setGapsBadge(d.open_count);
+      renderGaps();
+      loadKnowledge();
+      toast('جواب به پایگاه دانش اضافه شد؛ از این به بعد دستیار همین را می‌گوید');
+    } catch (e) {
+      toast(e.message, 'err');
+      busy(btn, false);
+    }
+  }
+
+  async function gapDismiss(id, btn) {
+    busy(btn, true);
+    try {
+      const d = await api(`/api/knowledge-gaps/${id}/dismiss`, { method: 'POST' });
+      gaps = gaps.filter(g => g.id !== id);
+      setGapsBadge(d.open_count);
+      renderGaps();
+    } catch (e) {
+      toast(e.message, 'err');
+      busy(btn, false);
+    }
   }
 
   async function loadKnowledge() {

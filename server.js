@@ -103,7 +103,12 @@ const {
   listSmsLog,
   markWidgetSeen,
   listActivation,
-  setWeeklyReportOptOut
+  setWeeklyReportOptOut,
+  recordKnowledgeGap,
+  listKnowledgeGaps,
+  countOpenKnowledgeGaps,
+  getKnowledgeGap,
+  resolveKnowledgeGap
 } = require('./db');
 
 const app = express();
@@ -1663,6 +1668,35 @@ app.post('/api/knowledge/qa', requireAuth, (req, res) => {
   res.json({ item: knowledge.addItem(req.shop.id, 'qa', question, answer) });
 });
 
+// سؤال‌هایی که دستیار جوابشان را نداشت؛ پرتکرارترها اول
+app.get('/api/knowledge-gaps', requireAuth, (req, res) => {
+  const status = ['open', 'answered', 'dismissed'].includes(req.query.status) ? req.query.status : 'open';
+  res.json({ items: listKnowledgeGaps(req.shop.id, status), open_count: countOpenKnowledgeGaps(req.shop.id) });
+});
+
+// جواب صاحب فروشگاه مستقیم یک سوال‌وجواب پایگاه دانش می‌شود (با همان سقف پلن)
+app.post('/api/knowledge-gaps/:id/answer', requireAuth, (req, res) => {
+  const gap = getKnowledgeGap(req.shop.id, Number(req.params.id));
+  if (!gap || gap.status !== 'open') return res.status(404).json({ error: 'این سؤال پیدا نشد یا قبلاً رسیدگی شده.' });
+  const question = clip(req.body.question || gap.question, KB.qa.question);
+  const answer = clip(req.body.answer, KB.qa.answer);
+  if (!question || !answer) return res.status(400).json({ error: 'متن جواب را بنویسید.' });
+  const qaLimit = getPlanLimits(req.shop).qa;
+  if (knowledge.countItems(req.shop.id, 'qa') >= qaLimit) {
+    return res.status(400).json({ error: `پلن فعلی شما تا ${qaLimit} جفت سوال و جواب اجازه می‌دهد. برای افزایش این سقف، پلن را ارتقا دهید.` });
+  }
+  const item = knowledge.addItem(req.shop.id, 'qa', question, answer);
+  resolveKnowledgeGap(req.shop.id, gap.id, 'answered', item.id);
+  res.json({ item, open_count: countOpenKnowledgeGaps(req.shop.id) });
+});
+
+app.post('/api/knowledge-gaps/:id/dismiss', requireAuth, (req, res) => {
+  if (!resolveKnowledgeGap(req.shop.id, Number(req.params.id), 'dismissed')) {
+    return res.status(404).json({ error: 'این سؤال پیدا نشد یا قبلاً رسیدگی شده.' });
+  }
+  res.json({ ok: true, open_count: countOpenKnowledgeGaps(req.shop.id) });
+});
+
 // ورود گروهی سوال‌وجواب از CSV (هر خط: سوال,جواب)
 app.post('/api/knowledge/qa/import', requireAuth, uploadDoc.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'فایلی ارسال نشده است.' });
@@ -2270,8 +2304,10 @@ async function handleTelegramUpdate(shop, update) {
   await telegram.sendMessage(token, chatId,
     out.reply + telegram.formatProducts(out.products, out.searchLink, out.searchLabel));
 
-  try { logExchange(shop.id, chat.session_id, 'telegram', customerMessage, out.reply, out.products, !!out.handoff); }
-  catch (e) { console.error('خطای ثبت گفتگوی تلگرام:', e.message); }
+  try {
+    const convId = logExchange(shop.id, chat.session_id, 'telegram', customerMessage, out.reply, out.products, !!out.handoff);
+    recordGap(shop, customerMessage, out, convId);
+  } catch (e) { console.error('خطای ثبت گفتگوی تلگرام:', e.message); }
 
   // فقط وقتی دستیار تشخیص داده کار به کارشناس انسانی رسیده، به فروشنده خبر می‌دهیم
   if (out.handoff) {
@@ -2458,6 +2494,8 @@ async function runAssistant(shop, { message, history, page }) {
   let lastSearchQuery = '';
   let lastTotalCount = 0;
   let handoff = null;
+  // نشانه‌های «جوابش را نداشتم» برای فهرست سؤال‌های بی‌جواب پنل
+  let knowledgeMiss = null, knowledgeHit = false, productMiss = null;
   let rounds = 0;
   // تا ۴ دور ابزار: جست‌وجوی اول + جست‌وجوی جایگزین (وقتی ناموجوده) + ارجاع به کارشناس
   while (choice.message.tool_calls && choice.message.tool_calls.length > 0 && rounds < 4) {
@@ -2471,6 +2509,7 @@ async function runAssistant(shop, { message, history, page }) {
 
       if (toolCall.function.name === 'search_products') {
         result = await searchProducts(shop, args.query);
+        if (Array.isArray(result.items) && !result.items.length) productMiss = String(args.query || '').slice(0, 120);
         if (result.items && result.items.length > 0) {
           lastProducts = result.items;
           lastSearchLink = result.searchLink;
@@ -2481,6 +2520,8 @@ async function runAssistant(shop, { message, history, page }) {
         result = await trackOrder(shop, args.order_code);
       } else if (toolCall.function.name === 'search_knowledge') {
         const hits = knowledge.search(shop.id, String(args.query || ''), 5);
+        if (hits.length) knowledgeHit = true;
+        else knowledgeMiss = String(args.query || '').slice(0, 120);
         result = hits.length
           ? { results: hits.map(h => ({ title: h.title, type: h.type, content: h.content.slice(0, 1200), source: h.source })) }
           : { results: [], message: 'چیزی در پایگاه دانش پیدا نشد. صادقانه بگو اطلاعاتش را نداری و به پشتیبانی ارجاع بده.' };
@@ -2524,8 +2565,18 @@ async function runAssistant(shop, { message, history, page }) {
       console.error('خطای درخواست نهایی بدون ابزار:', e?.message || e);
     }
   }
+  const noReply = !replyText;
   if (!replyText) {
     replyText = 'متاسفم، الان نتوانستم جواب دقیقی پیدا کنم. می‌شود سوالتان را کوتاه‌تر و ساده‌تر بپرسید؟';
+  }
+
+  // جواب نداشتن: یا جست‌وجوی پایگاه دانش خالی برگشت، یا خود جواب می‌گوید اطلاعاتش را ندارد
+  // (همان عبارت‌هایی که پرامپت برای این حالت می‌خواهد)، یا محصول پیدا نشد
+  let gap = null;
+  if (noReply || UNKNOWN_REPLY_RE.test(replyText) || (knowledgeMiss && !knowledgeHit)) {
+    gap = { kind: 'knowledge', query: knowledgeMiss };
+  } else if (productMiss && !lastProducts.length) {
+    gap = { kind: 'product', query: productMiss };
   }
 
   const products = lastProducts.slice(0, 4);
@@ -2535,8 +2586,28 @@ async function runAssistant(shop, { message, history, page }) {
     products,
     searchLink: lastTotalCount > products.length ? lastSearchLink : null,
     searchLabel: lastSearchQuery ? `مشاهده همه‌ی ${lastSearchQuery}` : 'مشاهده همه محصولات',
-    handoff
+    handoff,
+    gap
   };
+}
+
+const UNKNOWN_REPLY_RE = /(اطلاع|جزئیات|مشخصات)[^.!؟?\n]{0,25}ندارم|در مشخصاتی که (من )?دارم|نمی[‌ ]?(دونم|دانم)|مطمئن نیستم|اطلاعاتی (در این (مورد|باره) )?ثبت نشده/;
+
+// ثبت سؤال بی‌جواب برای پنل. سلام و تشکر و پیام‌های خیلی کوتاه ثبت نمی‌شوند.
+function recordGap(shop, message, out, conversationId) {
+  if (!out || !out.gap) return;
+  const question = String(message || '').trim().slice(0, 500);
+  const norm = knowledge.normalizeFa(question).toLowerCase()
+    .replace(/[؟?!.،,:;«»"'()\-]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300);
+  if (norm.length < 6 || !norm.includes(' ')) return;
+  try {
+    recordKnowledgeGap({
+      shopId: shop.id, norm, question, kind: out.gap.kind, query: out.gap.query,
+      reply: String(out.reply || '').slice(0, 1000), conversationId
+    });
+  } catch (e) {
+    console.error('خطای ثبت سؤال بی‌جواب:', e.message);
+  }
 }
 
 // ==================== اندپوینت اصلی چت (ویجت وب) ====================
@@ -2628,6 +2699,7 @@ app.post('/api/chat', chatLimiter, async (req, res) => {
       conversationId = logExchange(shop.id, sid, typeof pageUrl === 'string' ? pageUrl.slice(0, 500) : null,
         message.slice(0, 4000), out.reply.slice(0, 8000), out.products, !!out.handoff);
       if (visitor) setConversationCustomer(conversationId, visitor.name, visitor.phone);
+      recordGap(shop, message, out, conversationId);
     } catch (logErr) {
       console.error('خطای ثبت گفتگو:', logErr?.message || logErr);
     }
