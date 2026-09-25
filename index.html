@@ -37,9 +37,11 @@
 {
   "@context": "https://schema.org",
   "@type": "Organization",
+  "@id": "https://beporsid.com/#organization",
   "name": "بپرسید",
   "alternateName": "Beporsid",
   "url": "https://beporsid.com/",
+  "logo": "https://beporsid.com/favicon-192.png",
   "telephone": "+985136911324",
   "address": {
     "@type": "PostalAddress",
@@ -53,8 +55,11 @@
 {
   "@context": "https://schema.org",
   "@type": "WebSite",
+  "@id": "https://beporsid.com/#website",
   "name": "بپرسید",
-  "url": "https://beporsid.com/"
+  "url": "https://beporsid.com/",
+  "inLanguage": "fa-IR",
+  "publisher": { "@id": "https://beporsid.com/#organization" }
 }
 </script>
 <script type="application/ld+json">
@@ -65,7 +70,7 @@
     {
       "@type": "Question",
       "name": "فروشگاه من روی شاپفا نیست. باز هم کار می‌کند؟",
-      "acceptedAnswer": { "@type": "Answer", "text": "بله. اتصال آماده برای فروشگاه‌های شاپفا و ووکامرس هر دو فعال است. اگر فروشگاهتان روی پلتفرم دیگری است، با ما تماس بگیرید — اتصال به هر فروشگاهی که API داشته باشد ممکن است." }
+      "acceptedAnswer": { "@type": "Answer", "text": "بله. اتصال آماده برای فروشگاه‌های شاپفا، ووکامرس و سایت‌های ساخته‌شده با پرتال فعال است. اگر فروشگاهتان روی پلتفرم دیگری است، با ما تماس بگیرید — اتصال به هر فروشگاهی که API داشته باشد ممکن است." }
     },
     {
       "@type": "Question",
@@ -104,17 +109,22 @@
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
+  "@id": "https://beporsid.com/#software",
   "name": "بپرسید",
+  "alternateName": "چت بات هوش مصنوعی فروش بپرسید",
   "applicationCategory": "BusinessApplication",
+  "applicationSubCategory": "چت بات هوش مصنوعی فروش و پشتیبانی",
   "operatingSystem": "Web",
   "inLanguage": "fa-IR",
   "url": "https://beporsid.com/",
   "image": "https://beporsid.com/og.jpg",
   "description": "چت‌بات هوش مصنوعی فروش و پشتیبانی که به محصولات و موجودی واقعی فروشگاه وصل می‌شود و ۲۴ ساعته به مشتری‌ها جواب می‌دهد.",
+  "featureList": "اتصال به شاپفا، ووکامرس و پرتال؛ پاسخ ۲۴ ساعته با قیمت و موجودی واقعی؛ پایگاه دانش از فایل و صفحات سایت؛ ارجاع به کارشناس انسانی؛ ربات تلگرام",
+  "provider": { "@id": "https://beporsid.com/#organization" },
   "offers": [
-    { "@type": "Offer", "name": "آغازین", "price": "0", "priceCurrency": "IRT", "description": "تا ۲۰۰ پاسخ در ماه" },
-    { "@type": "Offer", "name": "رشد", "price": "1190000", "priceCurrency": "IRT", "description": "تا ۳۰۰۰ پاسخ در ماه" },
-    { "@type": "Offer", "name": "تجاری", "price": "8900000", "priceCurrency": "IRT", "description": "تا ۲۵۰۰۰ پاسخ در ماه" }
+    { "@type": "Offer", "name": "آغازین", "price": "0", "priceCurrency": "IRR", "url": "https://beporsid.com/#plans", "description": "رایگان، تا ۲۰۰ پاسخ در ماه" },
+    { "@type": "Offer", "name": "رشد", "price": "11900000", "priceCurrency": "IRR", "url": "https://beporsid.com/#plans", "description": "ماهانه ۱٬۱۹۰٬۰۰۰ تومان، تا ۳۰۰۰ پاسخ در ماه" },
+    { "@type": "Offer", "name": "تجاری", "price": "89000000", "priceCurrency": "IRR", "url": "https://beporsid.com/#plans", "description": "ماهانه ۸٬۹۰۰٬۰۰۰ تومان، تا ۲۵۰۰۰ پاسخ در ماه" }
   ]
 }
 </script>
@@ -943,7 +953,7 @@
       <div class="faq rv">
         <details open>
           <summary>فروشگاه من روی شاپفا نیست. باز هم کار می‌کند؟</summary>
-          <p>بله. اتصال آماده برای فروشگاه‌های شاپفا و ووکامرس هر دو فعال است. اگر فروشگاهتان روی پلتفرم دیگری است، با ما تماس بگیرید — اتصال به هر فروشگاهی که API داشته باشد ممکن است.</p>
+          <p>بله. اتصال آماده برای فروشگاه‌های شاپفا، ووکامرس و سایت‌های ساخته‌شده با پرتال فعال است. اگر فروشگاهتان روی پلتفرم دیگری است، با ما تماس بگیرید — اتصال به هر فروشگاهی که API داشته باشد ممکن است.</p>
         </details>
         <details>
           <summary>اطلاعات فروشگاهم در اختیار چه کسی قرار می‌گیرد؟</summary>
