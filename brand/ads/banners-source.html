@@ -4,123 +4,205 @@
 <meta charset="UTF-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<!--
+  منبع بنرهای تبلیغاتی بپرسید. هر .ad با اسکرین‌شات Playwright به PNG تبدیل می‌شود.
+  اصول: پس‌زمینه‌ی فیروزه‌ای روشن و یکدست (نه تیره و گل‌آلود)، تیتر کوتاه و درشت سفید،
+  نمونه‌ی واقعی گفتگو با کارت محصول تا محصول در یک نگاه فهمیده شود، دکمه‌ی زعفرانی پررنگ.
+  کوچک‌ترین متن در بنرهای کوچک ۱۲px است تا در اندازه‌ی واقعی خوانا بماند.
+-->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: #666; font-family: 'Vazirmatn', Tahoma, sans-serif; padding: 20px; }
+  body { background: #555; font-family: 'Vazirmatn', Tahoma, sans-serif; padding: 24px; }
+  .label { color: #fff; font: 600 13px Vazirmatn; margin: 28px 0 8px; }
 
-  .ad { position: relative; overflow: hidden; direction: rtl; }
-  /* پس‌زمینه‌ی برند: تیره با هاله‌ی فیروزه‌ای و زعفرانی، هم‌خانواده با تصویر OG سایت */
-  .dark { background: #0d1f22; }
-  .dark::before {
-    content: ''; position: absolute; inset: 0;
+  .ad {
+    position: relative; overflow: hidden; direction: rtl; color: #fff;
+    background: linear-gradient(150deg, #19a79e 0%, #12807a 55%, #0c6560 100%);
+  }
+  /* نور نرم بالای بنر و الگوی نقطه‌ای کم‌رنگ برای عمق، بدون کدر کردن رنگ */
+  .ad::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
     background:
-      radial-gradient(circle at 78% 18%, rgba(23,167,159,.55), transparent 62%),
-      radial-gradient(circle at 12% 92%, rgba(224,161,60,.28), transparent 66%);
+      radial-gradient(circle at 85% -10%, rgba(255,255,255,.28), transparent 45%),
+      radial-gradient(rgba(255,255,255,.09) 1.2px, transparent 1.3px) 0 0 / 16px 16px;
   }
   .ad > * { position: relative; z-index: 1; }
 
-  .brand { display: inline-flex; align-items: center; gap: 7px; }
-  .mark { border-radius: 26%; background: linear-gradient(145deg, #1cb5ac, #0f6f6a); display: grid; place-items: center; flex: none; }
-  .mark svg { fill: #fff; }
-  .brand b { color: #fff; font-weight: 900; letter-spacing: -.02em; }
+  .brand { display: inline-flex; align-items: center; gap: 7px; font-weight: 900; letter-spacing: -.02em; }
+  .mark { border-radius: 28%; background: #fff; display: grid; place-items: center; flex: none; }
+  .mark svg { fill: #12807a; }
 
-  h2 { color: #fff; font-weight: 900; letter-spacing: -.03em; line-height: 1.45; }
-  .hl { color: #6fd8cf; }
-  p.sub { color: rgba(255,255,255,.72); font-weight: 500; line-height: 1.7; }
+  h2 { font-weight: 900; letter-spacing: -.03em; line-height: 1.3; }
+  .y { color: #ffd98a; }
+
   .cta {
-    display: inline-flex; align-items: center; justify-content: center;
-    background: #e0a13c; color: #3d2a06; font-weight: 800; border-radius: 999px;
-    white-space: nowrap;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    background: #f5b93f; color: #3a2503; font-weight: 900; border-radius: 999px; white-space: nowrap;
+    box-shadow: 0 6px 16px -6px rgba(0,0,0,.45);
   }
-  .free { color: #6fd8cf; font-weight: 700; }
+  .cta svg { stroke: #3a2503; }
+  .note { font-weight: 700; color: rgba(255,255,255,.92); }
 
-  /* حباب چت تزئینی */
-  .bub { position: absolute; border-radius: 50%; background: rgba(255,255,255,.07); }
+  /* نمونه‌ی گفتگو */
+  .chat { display: grid; gap: 7px; }
+  .msg { font-weight: 600; border-radius: 16px; line-height: 1.5; box-shadow: 0 4px 14px -6px rgba(0,0,0,.35); }
+  .me { background: #0a4f4b; color: #fff; justify-self: start; border-bottom-right-radius: 5px; }
+  .bot { background: #fff; color: #10292d; justify-self: end; border-bottom-left-radius: 5px; }
+  .ok { color: #12807a; font-weight: 800; }
+  .card { display: flex; align-items: center; gap: 10px; background: #f3faf9; border-radius: 12px; margin-top: 8px; }
+  .thumb { flex: none; border-radius: 10px; background: linear-gradient(145deg, #ffe3a3, #f5b93f); display: grid; place-items: center; }
+  .card b { display: block; color: #10292d; font-weight: 800; }
+  .card span { color: #12807a; font-weight: 800; }
 
-  /* ---------- ۳۰۰×۲۵۰ مستطیل میانی ---------- */
-  #a { width: 300px; height: 250px; padding: 17px 17px 15px; display: flex; flex-direction: column; }
-  #a .mark { width: 22px; height: 22px; } #a .mark svg { width: 12px; height: 12px; }
-  #a .brand b { font-size: 14px; }
-  #a h2 { font-size: 19px; margin-top: 13px; line-height: 1.5; }
-  #a p.sub { font-size: 12px; margin-top: 8px; }
-  #a .foot { margin-top: auto; }
-  #a .cta { font-size: 13px; padding: 9px 17px; }
-  #a .free { display: block; font-size: 11px; margin-top: 7px; }
+  .checks { list-style: none; display: grid; }
+  .checks li { display: flex; align-items: center; gap: 9px; font-weight: 700; }
+  .checks i { flex: none; border-radius: 50%; background: #fff; display: grid; place-items: center; }
+  .checks i svg { stroke: #12807a; }
 
-  /* ---------- ۷۲۸×۹۰ افقی ---------- */
-  #b { width: 728px; height: 90px; padding: 0 20px; display: flex; align-items: center; gap: 16px; }
-  #b .mark { width: 28px; height: 28px; } #b .mark svg { width: 15px; height: 15px; }
-  #b .brand { flex: none; }
-  #b .brand b { font-size: 16px; }
-  #b h2 { font-size: 17px; flex: 1; line-height: 1.55; }
-  #b .cta { font-size: 14px; padding: 10px 24px; flex: none; }
+  /* ---------- ۳۰۰×۲۵۰ ---------- */
+  #a { width: 300px; height: 250px; padding: 16px 16px 14px; display: flex; flex-direction: column; }
+  #a .top { display: flex; align-items: center; justify-content: space-between; }
+  #a .brand { font-size: 15px; } #a .mark { width: 22px; height: 22px; } #a .mark svg { width: 13px; height: 13px; }
+  #a .pill { font-size: 12px; font-weight: 800; background: rgba(255,255,255,.18); padding: 2px 10px; border-radius: 999px; }
+  #a h2 { font-size: 23px; margin-top: 10px; }
+  #a .chat { margin-top: 10px; }
+  #a .msg { font-size: 12.5px; padding: 6px 11px; }
+  #a .foot { margin-top: auto; display: flex; align-items: center; justify-content: space-between; }
+  #a .cta { font-size: 15px; padding: 8px 18px; }
+  #a .note { font-size: 12px; }
 
-  /* ---------- ۳۲۰×۱۰۰ موبایل ---------- */
-  #c { width: 320px; height: 100px; padding: 11px 13px; display: flex; align-items: center; gap: 10px; }
-  #c .mark { width: 24px; height: 24px; } #c .mark svg { width: 13px; height: 13px; }
-  #c .txt { flex: 1; min-width: 0; }
-  #c h2 { font-size: 14px; line-height: 1.5; }
-  #c p.sub { font-size: 10.5px; margin-top: 5px; }
-  #c .cta { font-size: 12px; padding: 8px 15px; flex: none; }
+  /* ---------- ۶۰۰×۵۰۰ ---------- */
+  #d { width: 600px; height: 500px; padding: 30px 34px 28px; display: flex; flex-direction: column; }
+  #d .brand { font-size: 21px; } #d .mark { width: 32px; height: 32px; } #d .mark svg { width: 18px; height: 18px; }
+  #d h2 { font-size: 38px; margin-top: 14px; }
+  #d .row { flex: 1; display: grid; grid-template-columns: 1fr 250px; gap: 22px; margin-top: 18px; min-height: 0; }
+  #d .col { display: flex; flex-direction: column; }
+  #d .checks { gap: 12px; margin-top: 6px; }
+  #d .checks li { font-size: 16px; } #d .checks i { width: 22px; height: 22px; } #d .checks i svg { width: 13px; height: 13px; }
+  #d .cta { font-size: 19px; padding: 13px 26px; margin-top: auto; align-self: flex-start; }
+  #d .note { font-size: 13.5px; margin-top: 9px; }
+  #d .phone { background: rgba(255,255,255,.14); border: 1.5px solid rgba(255,255,255,.35); border-radius: 22px; padding: 12px 12px; }
+  #d .phone .hd { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; padding: 0 4px 12px; border-bottom: 1px solid rgba(255,255,255,.25); margin-bottom: 12px; }
+  #d .phone .hd .mark { width: 24px; height: 24px; } #d .phone .hd .mark svg { width: 13px; height: 13px; }
+  #d .phone .hd small { display: block; font-size: 11px; font-weight: 600; opacity: .85; }
+  #d .msg { font-size: 13.5px; padding: 8px 12px; }
+  #d .card { padding: 7px; } #d .thumb { width: 42px; height: 42px; } #d .thumb svg { width: 20px; height: 20px; }
+  #d .card b { font-size: 12.5px; } #d .card span { font-size: 12.5px; }
 
-  /* ---------- ۶۰۰×۵۰۰ نیتیو / شبکه‌های اجتماعی ---------- */
-  #d { width: 600px; height: 500px; padding: 44px 40px; display: flex; flex-direction: column; }
-  #d .mark { width: 36px; height: 36px; } #d .mark svg { width: 19px; height: 19px; }
-  #d .brand b { font-size: 22px; }
-  #d h2 { font-size: 40px; margin-top: 34px; }
-  #d p.sub { font-size: 17px; margin-top: 16px; max-width: 24em; }
-  #d .cta { font-size: 17px; padding: 14px 30px; margin-top: auto; align-self: flex-start; }
-  #d .free { display: block; font-size: 14px; margin-top: 12px; }
-  /* گفتگوی کوچک نمونه، تا در یک نگاه معلوم شود محصول چیست */
-  #d .chat { margin-top: 30px; display: grid; gap: 8px; max-width: 330px; }
-  #d .msg { font-size: 14px; padding: 9px 14px; border-radius: 14px; line-height: 1.6; }
-  #d .me { background: #17a79f; color: #fff; border-bottom-right-radius: 4px; justify-self: start; }
-  #d .bot { background: #fff; color: #13262b; border-bottom-left-radius: 4px; justify-self: end; }
+  /* ---------- ۴۰۰×۶۰۰ عمودی ---------- */
+  #v { width: 400px; height: 600px; padding: 30px 28px 26px; display: flex; flex-direction: column; }
+  #v .brand { font-size: 20px; } #v .mark { width: 30px; height: 30px; } #v .mark svg { width: 17px; height: 17px; }
+  #v h2 { font-size: 36px; margin-top: 20px; }
+  #v .chat { margin-top: 22px; }
+  #v .msg { font-size: 15px; padding: 9px 14px; }
+  #v .card { padding: 8px; } #v .thumb { width: 46px; height: 46px; } #v .thumb svg { width: 22px; height: 22px; }
+  #v .card b { font-size: 13.5px; } #v .card span { font-size: 13.5px; }
+  #v .checks { margin-top: 20px; gap: 9px; }
+  #v .checks li { font-size: 15.5px; } #v .checks i { width: 22px; height: 22px; } #v .checks i svg { width: 13px; height: 13px; }
+  #v .cta { font-size: 20px; padding: 14px; margin-top: auto; }
+  #v .note { font-size: 14px; text-align: center; margin-top: 10px; }
 
-  .label { color: #fff; font: 600 13px Vazirmatn; margin: 26px 0 8px; }
+  /* ---------- ۷۲۸×۹۰ ---------- */
+  #b { width: 728px; height: 90px; padding: 0 22px; display: flex; align-items: center; gap: 18px; }
+  #b .brand { font-size: 18px; flex: none; } #b .mark { width: 30px; height: 30px; } #b .mark svg { width: 17px; height: 17px; }
+  #b .sep { width: 1px; height: 44px; background: rgba(255,255,255,.35); flex: none; }
+  #b h2 { font-size: 21px; flex: 1; }
+  #b .cta { font-size: 16px; padding: 11px 24px; flex: none; }
+
+  /* ---------- ۳۲۰×۱۰۰ ---------- */
+  #c { width: 320px; height: 100px; padding: 0 14px; display: flex; align-items: center; gap: 11px; }
+  #c .mark { width: 34px; height: 34px; } #c .mark svg { width: 19px; height: 19px; }
+  #c h2 { font-size: 17px; flex: 1; line-height: 1.35; }
+  #c .cta { font-size: 14px; padding: 9px 16px; flex: none; }
 </style>
 </head>
 <body>
 
+<!-- آیکون‌های مشترک -->
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="logo" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.44 1.15 4.65 3 6.3V22l4.1-2.05c.93.2 1.9.3 2.9.3 5.52 0 10-4.03 10-9S17.52 2 12 2z"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="arrow" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="case" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="3" fill="#3a2503"/><circle cx="9.5" cy="6.5" r="1.6" fill="#ffd98a"/></symbol>
+</svg>
+
 <div class="label">۳۰۰×۲۵۰</div>
-<div class="ad dark" id="a">
-  <span class="brand"><span class="mark"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.44 1.15 4.65 3 6.3V22l4.1-2.05c.93.2 1.9.3 2.9.3 5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg></span><b>بپرسید</b></span>
-  <h2>مشتری شب سوال می‌پرسد،<br><span class="hl">جوابش را چه کسی می‌دهد؟</span></h2>
-  <p class="sub">دستیار هوش مصنوعی که به موجودی واقعی فروشگاهت وصل است.</p>
-  <div class="foot">
-    <span class="cta">رایگان امتحان کن</span>
-    <span class="free">۲۰۰ پاسخ رایگان · بدون کارت بانکی</span>
+<div class="ad" id="a">
+  <div class="top">
+    <span class="brand"><span class="mark"><svg><use href="#logo"/></svg></span>بپرسید</span>
+    <span class="pill">۲۴ ساعته</span>
   </div>
+  <h2>ساعت ۲ بامداد<br><span class="y">هم جواب مشتری را بده</span></h2>
+  <div class="chat">
+    <div class="msg me">این قاب برای آیفون ۱۵ هست؟</div>
+    <div class="msg bot"><span class="ok">✓</span> بله، موجوده. فردا ارسال می‌شه</div>
+  </div>
+  <div class="foot">
+    <span class="cta">رایگان شروع کن <svg width="14" height="14"><use href="#arrow"/></svg></span>
+    <span class="note">بدون کارت بانکی</span>
+  </div>
+</div>
+
+<div class="label">۶۰۰×۵۰۰</div>
+<div class="ad" id="d">
+  <span class="brand"><span class="mark"><svg><use href="#logo"/></svg></span>بپرسید</span>
+  <h2>مشتری سوال دارد؟<br><span class="y">همان لحظه جواب بگیرد.</span></h2>
+  <div class="row">
+    <div class="col">
+      <ul class="checks">
+        <li><i><svg><use href="#check"/></svg></i>وصل به قیمت و موجودی واقعی</li>
+        <li><i><svg><use href="#check"/></svg></i>شاپفا، ووکامرس و پرتال</li>
+        <li><i><svg><use href="#check"/></svg></i>نصب با یک خط کد</li>
+        <li><i><svg><use href="#check"/></svg></i>جواب ۲۴ ساعته، حتی تعطیلات</li>
+      </ul>
+      <span class="cta">رایگان راه‌اندازی کن <svg width="17" height="17"><use href="#arrow"/></svg></span>
+      <span class="note">۲۰۰ پاسخ رایگان در ماه · بدون کارت بانکی</span>
+    </div>
+    <div class="phone">
+      <div class="hd"><span class="mark"><svg><use href="#logo"/></svg></span><div>دستیار فروشگاه<small>آنلاین · همیشه</small></div></div>
+      <div class="chat">
+        <div class="msg me">قاب مگسیف آیفون ۱۵ دارید؟</div>
+        <div class="msg bot">بله، این مدل موجوده:
+          <div class="card"><span class="thumb"><svg><use href="#case"/></svg></span><div><b>قاب مگسیف شفاف</b><span>۴۹۰٬۰۰۰ تومان</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="label">۴۰۰×۶۰۰</div>
+<div class="ad" id="v">
+  <span class="brand"><span class="mark"><svg><use href="#logo"/></svg></span>بپرسید</span>
+  <h2>فروشنده‌ای که<br><span class="y">هیچ‌وقت نمی‌خوابد</span></h2>
+  <div class="chat">
+    <div class="msg me">قاب مگسیف آیفون ۱۵ دارید؟</div>
+    <div class="msg bot">بله، این مدل موجوده:
+      <div class="card"><span class="thumb"><svg><use href="#case"/></svg></span><div><b>قاب مگسیف شفاف</b><span>۴۹۰٬۰۰۰ تومان</span></div></div>
+    </div>
+  </div>
+  <ul class="checks">
+    <li><i><svg><use href="#check"/></svg></i>جواب ۲۴ ساعته با موجودی واقعی</li>
+    <li><i><svg><use href="#check"/></svg></i>شاپفا، ووکامرس و پرتال</li>
+    <li><i><svg><use href="#check"/></svg></i>نصب با یک خط کد</li>
+  </ul>
+  <span class="cta">رایگان راه‌اندازی کن <svg width="18" height="18"><use href="#arrow"/></svg></span>
+  <span class="note">۲۰۰ پاسخ رایگان در ماه · بدون کارت بانکی</span>
 </div>
 
 <div class="label">۷۲۸×۹۰</div>
-<div class="ad dark" id="b">
-  <span class="brand"><span class="mark"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.44 1.15 4.65 3 6.3V22l4.1-2.05c.93.2 1.9.3 2.9.3 5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg></span><b>بپرسید</b></span>
-  <h2>فروشگاه اینترنتی داری؟<br><span class="hl">دستیار هوشمند، ۲۴ ساعته جواب مشتری‌هایت را می‌دهد.</span></h2>
-  <span class="cta">۲۰۰ پاسخ رایگان</span>
+<div class="ad" id="b">
+  <span class="brand"><span class="mark"><svg><use href="#logo"/></svg></span>بپرسید</span>
+  <span class="sep"></span>
+  <h2>جواب ۲۴ ساعته به مشتری‌های فروشگاهت، <span class="y">با هوش مصنوعی</span></h2>
+  <span class="cta">رایگان شروع کن <svg width="15" height="15"><use href="#arrow"/></svg></span>
 </div>
 
 <div class="label">۳۲۰×۱۰۰</div>
-<div class="ad dark" id="c">
-  <span class="mark"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.44 1.15 4.65 3 6.3V22l4.1-2.05c.93.2 1.9.3 2.9.3 5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg></span>
-  <div class="txt">
-    <h2>مشتری سوال دارد؟<br><span class="hl">همان لحظه جواب بگیرد.</span></h2>
-    <p class="sub">چت‌بات فروش · ۲۰۰ پاسخ رایگان</p>
-  </div>
-  <span class="cta">شروع</span>
-</div>
-
-<div class="label">۶۰۰×۵۰۰ (نیتیو / اینستاگرام)</div>
-<div class="ad dark" id="d">
-  <span class="brand"><span class="mark"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.44 1.15 4.65 3 6.3V22l4.1-2.05c.93.2 1.9.3 2.9.3 5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg></span><b>بپرسید</b></span>
-  <h2>هر مشتری که جواب نگیرد،<br><span class="hl">مشتری رقیبت می‌شود.</span></h2>
-  <div class="chat">
-    <div class="msg me">این مدل موجوده؟ فردا لازمش دارم</div>
-    <div class="msg bot">بله، ۳ عدد موجود است و ۲ تا ۴ روز کاری ارسال می‌شود.</div>
-  </div>
-  <span class="cta">رایگان راه‌اندازی کن</span>
-  <span class="free">۲۰۰ پاسخ رایگان در ماه · بدون کارت بانکی</span>
+<div class="ad" id="c">
+  <span class="mark"><svg><use href="#logo"/></svg></span>
+  <h2>جواب ۲۴ ساعته<br><span class="y">به مشتری فروشگاهت</span></h2>
+  <span class="cta">رایگان</span>
 </div>
 
 </body>
