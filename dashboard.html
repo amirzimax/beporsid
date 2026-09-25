@@ -3437,7 +3437,7 @@
   }
 
   /* ---------- مارکتینگ ---------- */
-  const MK_PHASES = { 0: 'کارهای اضافه‌شده', 1: 'فاز ۱: پایه', 2: 'فاز ۲: صفحه‌های فروش و محتوا', 3: 'فاز ۳: لینک و اعتبار', 4: 'فاز ۴: تثبیت' };
+  const MK_PHASES = { 0: 'کارها و پیشنهادهای تازه',1: 'فاز ۱: پایه', 2: 'فاز ۲: صفحه‌های فروش و محتوا', 3: 'فاز ۳: لینک و اعتبار', 4: 'فاز ۴: تثبیت' };
   const MK_STATUS = {
     todo: ['انجام نشده', ''], approved: ['تأیید شد، در صف Claude', 'pending'], in_progress: ['Claude در حال انجام', 'pending'],
     done: ['انجام شد', 'connected'], skipped: ['کنار گذاشته شد', '']
@@ -3483,7 +3483,7 @@
     const list = tasks.filter(t =>
       f === 'all' ? true :
       f === 'done' ? !open(t) :
-      f === 'approve' ? t.owner === 'claude' && t.status === 'todo' :
+      f === 'approve' ? (t.owner === 'claude' || t.source === 'claude') && t.status === 'todo' :
       open(t) && t.due <= weekEnd);
     if (!list.length) {
       $('mk-list').innerHTML = `<div class="card"><div class="kb-empty">${f === 'now' ? 'برای این هفته کاری نمانده.' : 'کاری در این فهرست نیست.'}</div></div>`;
@@ -3523,7 +3523,7 @@
       <div class="gap" id="mk-${t.id}">
         <div class="gap-head">
           <div class="gap-q">${t.status === 'done' ? '✅ ' : ''}${esc(t.title)}</div>
-          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${who}${cls || t.status !== 'todo' ? `<span class="badge ${cls}">${esc(label)}</span>` : ''}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${t.source === 'claude' ? '<span class="badge pending">پیشنهاد Claude</span>' : ''}${who}${cls || t.status !== 'todo' ? `<span class="badge ${cls}">${esc(label)}</span>` : ''}</div>
         </div>
         <div class="fine">هفته‌ی ${fa(t.week)} · ${esc(faDateShort(t.due))}${late ? ' · <span class="error">عقب‌افتاده</span>' : ''}</div>
         <div style="font-size:13.5px;line-height:1.9;margin-top:6px;color:var(--ink-soft)">${esc(t.description)}</div>

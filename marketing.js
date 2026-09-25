@@ -30,6 +30,12 @@ db.exec(`
   );
   CREATE TABLE IF NOT EXISTS marketing_settings (key TEXT PRIMARY KEY, value TEXT);
 `);
+// منبع هر کار: plan = برنامه‌ی اولیه، admin = اضافه‌شده توسط مدیر، claude = پیشنهاد Claude
+{
+  const cols = db.prepare('PRAGMA table_info(marketing_tasks)').all().map(c => c.name);
+  if (!cols.includes('source')) db.exec(`ALTER TABLE marketing_tasks ADD COLUMN source TEXT NOT NULL DEFAULT 'plan'`);
+  db.exec(`UPDATE marketing_tasks SET source = 'admin' WHERE custom = 1 AND source = 'plan'`);
+}
 
 // برنامه‌ی سئو برای «چت بات هوش مصنوعی فروش». week = هفته‌ی هدف از شروع برنامه.
 const PLAN = [
@@ -143,11 +149,17 @@ function adminUpdate(id, { action, note }) {
   return { task: getTask(id) };
 }
 
-function addCustomTask({ title, description, owner, week }) {
-  const id = 'c-' + Date.now().toString(36);
-  db.prepare(`INSERT INTO marketing_tasks (id, phase, week, owner, kind, title, description, custom) VALUES (?, 0, ?, ?, 'task', ?, ?, 1)`)
-    .run(id, Math.max(1, Math.min(52, Number(week) || 1)), owner === 'claude' ? 'claude' : 'admin',
-      String(title).trim().slice(0, 200), String(description || '').trim().slice(0, 2000));
+// هفته‌ی جاری برنامه (از تاریخ شروع)
+function currentWeek() {
+  return Math.max(1, Math.floor((Date.now() - Date.parse(startDate() + 'T00:00:00Z')) / (7 * 86400000)) + 1);
+}
+
+function addCustomTask({ title, description, owner, week, kind }, source = 'admin') {
+  const id = (source === 'claude' ? 's-' : 'c-') + Date.now().toString(36);
+  db.prepare(`INSERT INTO marketing_tasks (id, phase, week, owner, kind, title, description, custom, source) VALUES (?, 0, ?, ?, ?, ?, ?, 1, ?)`)
+    .run(id, Math.max(1, Math.min(104, Number(week) || currentWeek())), owner === 'claude' ? 'claude' : 'admin',
+      ['task', 'article', 'page'].includes(kind) ? kind : 'task',
+      String(title).trim().slice(0, 200), String(description || '').trim().slice(0, 2000), source);
   return getTask(id);
 }
 

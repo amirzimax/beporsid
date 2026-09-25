@@ -1347,6 +1347,15 @@ app.get('/api/agent/marketing', requireAgent, (req, res) => {
   res.json({ items: marketing.agentQueue() });
 });
 
+// پیشنهاد کار تازه از طرف Claude؛ در پنل با برچسب «پیشنهاد Claude» می‌آید و تا مدیر تأیید نکند انجام نمی‌شود
+app.post('/api/agent/marketing', requireAgent, (req, res) => {
+  const b = req.body || {};
+  if (!b.title || !String(b.title).trim()) return res.status(400).json({ error: 'عنوان لازم است.' });
+  const task = marketing.addCustomTask(b, 'claude');
+  alerts.notify(`💡 پیشنهاد مارکتینگ تازه در پنل: ${task.title}`);
+  res.json({ task });
+});
+
 app.post('/api/agent/marketing/:id', requireAgent, (req, res) => {
   const r = marketing.agentUpdate(req.params.id, req.body || {});
   if (r.error) return res.status(400).json({ error: r.error });
