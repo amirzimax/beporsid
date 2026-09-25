@@ -1553,13 +1553,45 @@
           </div>
         </div>
 
-        <div class="seg" style="max-width:660px;margin-bottom:18px">
+        <div class="seg" style="max-width:760px;margin-bottom:18px">
           <button class="active" data-atab="overview" onclick="adminTab('overview')">نمای کلی</button>
           <button data-atab="shops" onclick="adminTab('shops')">فروشگاه‌ها</button>
           <button data-atab="tickets" onclick="adminTab('tickets')">تیکت‌ها <span id="adm-tk-count" class="nav-badge hidden">۰</span></button>
           <button data-atab="payments" onclick="adminTab('payments')">پرداخت‌ها</button>
           <button data-atab="conversations" onclick="adminTab('conversations')">گفتگوها</button>
           <button data-atab="crm" onclick="adminTab('crm')">باشگاه مشتریان</button>
+          <button data-atab="marketing" onclick="adminTab('marketing')">مارکتینگ</button>
+        </div>
+
+        <!-- مارکتینگ -->
+        <div data-apanel="marketing" class="hidden">
+          <div class="card">
+            <div class="card-head"><div>
+              <h2>برنامه‌ی سئو: «چت بات هوش مصنوعی فروش»</h2>
+              <p class="muted">کارهای «شما» را خودتان انجام می‌دهید و تیک می‌زنید. کارهای «Claude» را تأیید کنید؛ در اولین گفتگوی بعدی‌تان با Claude Code، کارهای تأییدشده انجام می‌شوند، این‌جا «انجام شد» می‌خورد و در تلگرام خبرتان می‌کنم.</p>
+            </div></div>
+            <div id="mk-summary"></div>
+          </div>
+          <div class="adm-tools">
+            <div class="seg funnel-seg">
+              <button class="active" data-mkf="now" onclick="mkFilter('now')">این هفته و عقب‌افتاده</button>
+              <button data-mkf="approve" onclick="mkFilter('approve')">منتظر تأیید</button>
+              <button data-mkf="all" onclick="mkFilter('all')">همه</button>
+              <button data-mkf="done" onclick="mkFilter('done')">انجام‌شده</button>
+            </div>
+            <button class="btn btn-outline" onclick="$('mk-add').classList.toggle('hidden')">افزودن کار</button>
+          </div>
+          <div class="card hidden" id="mk-add">
+            <div class="crm-row">
+              <div class="field"><label for="mk-title">عنوان کار</label><input type="text" id="mk-title" maxlength="200" /></div>
+              <div class="field"><label for="mk-owner">انجام‌دهنده</label>
+                <select id="mk-owner"><option value="admin">خودم</option><option value="claude">Claude</option></select></div>
+            </div>
+            <div class="field"><label for="mk-desc">توضیح</label><textarea id="mk-desc" maxlength="2000"></textarea></div>
+            <div class="field"><label for="mk-week">هفته‌ی هدف (از شروع برنامه)</label><input type="number" id="mk-week" min="1" max="52" value="1" style="max-width:120px" /></div>
+            <div class="actions"><button class="btn btn-primary" onclick="mkAdd(this)">افزودن</button></div>
+          </div>
+          <div id="mk-list"></div>
         </div>
 
         <!-- باشگاه مشتریان -->
@@ -3401,6 +3433,135 @@
     else if (adminState.tab === 'payments') loadAdminPayments();
     else if (adminState.tab === 'conversations') loadAdminConvs();
     else if (adminState.tab === 'crm') loadAdminCrm();
+    else if (adminState.tab === 'marketing') loadMarketing();
+  }
+
+  /* ---------- مارکتینگ ---------- */
+  const MK_PHASES = { 0: 'کارهای اضافه‌شده', 1: 'فاز ۱: پایه', 2: 'فاز ۲: صفحه‌های فروش و محتوا', 3: 'فاز ۳: لینک و اعتبار', 4: 'فاز ۴: تثبیت' };
+  const MK_STATUS = {
+    todo: ['انجام نشده', ''], approved: ['تأیید شد، در صف Claude', 'pending'], in_progress: ['Claude در حال انجام', 'pending'],
+    done: ['انجام شد', 'connected'], skipped: ['کنار گذاشته شد', '']
+  };
+  const mkState = { filter: 'now', data: null };
+  const faDateShort = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString('fa-IR', { day: 'numeric', month: 'long' });
+
+  async function loadMarketing() {
+    $('mk-list').innerHTML = '<div class="card"><div class="kb-empty">در حال دریافت…</div></div>';
+    try {
+      mkState.data = await api('/api/admin/marketing');
+      renderMarketing();
+    } catch (e) {
+      $('mk-list').innerHTML = `<div class="card"><div class="kb-empty"><span class="error">${esc(e.message)}</span></div></div>`;
+    }
+  }
+
+  function mkFilter(f) {
+    mkState.filter = f;
+    document.querySelectorAll('[data-mkf]').forEach(b => b.classList.toggle('active', b.dataset.mkf === f));
+    renderMarketing();
+  }
+
+  function renderMarketing() {
+    const { tasks, start } = mkState.data;
+    const today = new Date().toISOString().slice(0, 10);
+    const weekEnd = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+    const open = t => t.status !== 'done' && t.status !== 'skipped';
+    const done = tasks.filter(t => t.status === 'done').length;
+    const counted = tasks.filter(t => t.status !== 'skipped').length;
+    const overdue = tasks.filter(t => open(t) && t.due < today).length;
+    const queued = tasks.filter(t => t.status === 'approved' || t.status === 'in_progress').length;
+    $('mk-summary').innerHTML = `
+      <div class="crm-strip">
+        <span class="item"><b class="adm-num">${fmtNum(done)}</b>&nbsp;از ${fmtNum(counted)} کار انجام شده</span>
+        <span class="item">شروع برنامه: ${esc(faDateShort(start))}</span>
+        ${overdue ? `<span class="item"><span class="badge disconnected">${fmtNum(overdue)} کار عقب‌افتاده</span></span>` : ''}
+        ${queued ? `<span class="item"><span class="badge pending">${fmtNum(queued)} کار در صف Claude</span></span>` : ''}
+      </div>
+      <div class="funnel-track" style="margin-top:12px;height:10px"><div class="funnel-bar" style="width:${counted ? Math.round(done / counted * 100) : 0}%"></div></div>`;
+
+    const f = mkState.filter;
+    const list = tasks.filter(t =>
+      f === 'all' ? true :
+      f === 'done' ? !open(t) :
+      f === 'approve' ? t.owner === 'claude' && t.status === 'todo' :
+      open(t) && t.due <= weekEnd);
+    if (!list.length) {
+      $('mk-list').innerHTML = `<div class="card"><div class="kb-empty">${f === 'now' ? 'برای این هفته کاری نمانده.' : 'کاری در این فهرست نیست.'}</div></div>`;
+      return;
+    }
+    const phases = [...new Set(list.map(t => t.phase))].sort((a, b) => (a || 99) - (b || 99));
+    $('mk-list').innerHTML = phases.map(p => `
+      <div class="card">
+        <div class="card-head"><div><h2 style="font-size:15px">${esc(MK_PHASES[p] || '')}</h2></div></div>
+        <div class="gaps">${list.filter(t => t.phase === p).map(t => mkTaskHtml(t, today)).join('')}</div>
+      </div>`).join('');
+  }
+
+  function mkTaskHtml(t, today) {
+    const [label, cls] = MK_STATUS[t.status] || [t.status, ''];
+    const late = t.status !== 'done' && t.status !== 'skipped' && t.due < today;
+    const who = t.owner === 'claude' ? '<span class="badge pending" style="background:var(--firooze-mist);color:var(--firooze-deep)">Claude</span>' : '<span class="badge">کار شما</span>';
+    let actions = '';
+    if (t.owner === 'claude' && t.status === 'todo') {
+      actions = `
+        <div class="field" style="margin:10px 0 0"><textarea id="mk-note-${t.id}" maxlength="1000" placeholder="توضیح یا خواسته‌ی شما برای Claude (اختیاری)، مثلاً «روی ووکامرس تمرکز کن»">${esc(t.note || '')}</textarea></div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="mkAction('${t.id}', 'approve', this)">تأیید و سپردن به Claude</button>
+          <button class="btn btn-ghost" onclick="mkAction('${t.id}', 'skip', this)">کنار گذاشتن</button>
+        </div>`;
+    } else if (t.status === 'approved') {
+      actions = `<div class="actions"><button class="btn btn-ghost" onclick="mkAction('${t.id}', 'unapprove', this)">لغو تأیید</button></div>`;
+    } else if (t.owner === 'admin' && t.status === 'todo') {
+      actions = `<div class="actions">
+          <button class="btn btn-primary" onclick="mkAction('${t.id}', 'done', this)">انجام دادم</button>
+          <button class="btn btn-ghost" onclick="mkAction('${t.id}', 'skip', this)">کنار گذاشتن</button>
+        </div>`;
+    } else if (t.status === 'done' || t.status === 'skipped') {
+      actions = `<div class="actions"><button class="btn btn-ghost" onclick="mkAction('${t.id}', 'undone', this)">برگرداندن به فهرست</button></div>`;
+    }
+    return `
+      <div class="gap" id="mk-${t.id}">
+        <div class="gap-head">
+          <div class="gap-q">${t.status === 'done' ? '✅ ' : ''}${esc(t.title)}</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${who}${cls || t.status !== 'todo' ? `<span class="badge ${cls}">${esc(label)}</span>` : ''}</div>
+        </div>
+        <div class="fine">هفته‌ی ${fa(t.week)} · ${esc(faDateShort(t.due))}${late ? ' · <span class="error">عقب‌افتاده</span>' : ''}</div>
+        <div style="font-size:13.5px;line-height:1.9;margin-top:6px;color:var(--ink-soft)">${esc(t.description)}</div>
+        ${t.note && t.status !== 'todo' ? `<div class="fine" style="margin-top:6px">توضیح شما: ${esc(t.note)}</div>` : ''}
+        ${t.result_url ? `<div style="margin-top:6px"><a href="${esc(t.result_url)}" target="_blank" rel="noopener">مشاهده‌ی نتیجه</a></div>` : ''}
+        ${t.report ? `<div class="fine" style="margin-top:4px;white-space:pre-wrap">${esc(t.report)}</div>` : ''}
+        ${actions}
+      </div>`;
+  }
+
+  async function mkAction(id, action, btn) {
+    const noteEl = $('mk-note-' + id);
+    busy(btn, true);
+    try {
+      const { task } = await api('/api/admin/marketing/' + id, { method: 'POST', json: { action, note: noteEl ? noteEl.value : undefined } });
+      const i = mkState.data.tasks.findIndex(t => t.id === id);
+      mkState.data.tasks[i] = Object.assign(mkState.data.tasks[i], task);
+      renderMarketing();
+      if (action === 'approve') toast('تأیید شد؛ در گفتگوی بعدی با Claude انجام می‌شود');
+    } catch (e) {
+      toast(e.message, 'err');
+      busy(btn, false);
+    }
+  }
+
+  async function mkAdd(btn) {
+    const title = $('mk-title').value.trim();
+    if (!title) { toast('عنوان کار را بنویسید', 'err'); return; }
+    busy(btn, true);
+    try {
+      await api('/api/admin/marketing', { method: 'POST', json: { title, description: $('mk-desc').value, owner: $('mk-owner').value, week: $('mk-week').value } });
+      $('mk-title').value = ''; $('mk-desc').value = '';
+      $('mk-add').classList.add('hidden');
+      toast('کار اضافه شد');
+      loadMarketing();
+    } catch (e) {
+      toast(e.message, 'err');
+    } finally { busy(btn, false); }
   }
 
   /* ---------- باشگاه مشتریان ---------- */

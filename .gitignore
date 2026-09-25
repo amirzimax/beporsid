@@ -28,3 +28,4 @@ Thumbs.db
 # تنظیمات محلی Claude Code
 .claude/settings.local.json
 .claude/release.md
+.claude/marketing-token

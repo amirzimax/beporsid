@@ -18,6 +18,7 @@ const telegram = require('./telegram');
 const crm = require('./crm');
 const alerts = require('./alerts');
 const reports = require('./reports');
+const marketing = require('./marketing');
 // آپلود فایل‌های پایگاه دانش (docx/xlsx/pdf/txt) - حداکثر ۱۰ مگابایت
 const uploadDoc = multer({ storage: multer.memoryStorage(), limits: { fileSize: knowledge.LIMITS.file.maxBytes } });
 
@@ -1312,6 +1313,47 @@ app.get('/api/admin/conversations/:id', adminOnly, (req, res) => {
   const conv = getConversationAsAdmin(Number(req.params.id));
   if (!conv) return res.status(404).json({ error: 'گفتگو پیدا نشد.' });
   res.json({ conversation: conv });
+});
+
+// ==================== مارکتینگ (برنامه‌ی سئو) ====================
+
+app.get('/api/admin/marketing', adminOnly, (req, res) => {
+  res.json(marketing.listTasks());
+});
+
+app.post('/api/admin/marketing', adminOnly, (req, res) => {
+  if (!req.body.title || !String(req.body.title).trim()) return res.status(400).json({ error: 'عنوان کار را بنویسید.' });
+  res.json({ task: marketing.addCustomTask(req.body) });
+});
+
+app.post('/api/admin/marketing/:id', adminOnly, (req, res) => {
+  const r = marketing.adminUpdate(req.params.id, { action: req.body.action, note: req.body.note });
+  if (r.error) return res.status(400).json({ error: r.error });
+  res.json(r);
+});
+
+// Claude Code با کلید جداگانه‌ی MARKETING_AGENT_TOKEN کارهای تأییدشده را می‌خواند و نتیجه را
+// ثبت می‌کند. این کلید فقط به همین دو مسیر دسترسی دارد؛ اگر در .env نباشد، مسیرها غیرفعال‌اند.
+function requireAgent(req, res, next) {
+  const expected = process.env.MARKETING_AGENT_TOKEN || '';
+  const got = String(req.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  const ok = expected.length >= 24 && got.length === expected.length &&
+    crypto.timingSafeEqual(Buffer.from(got), Buffer.from(expected));
+  if (!ok) return res.status(404).json({ error: 'پیدا نشد.' });
+  next();
+}
+
+app.get('/api/agent/marketing', requireAgent, (req, res) => {
+  res.json({ items: marketing.agentQueue() });
+});
+
+app.post('/api/agent/marketing/:id', requireAgent, (req, res) => {
+  const r = marketing.agentUpdate(req.params.id, req.body || {});
+  if (r.error) return res.status(400).json({ error: r.error });
+  if (r.task.status === 'done') {
+    alerts.notify(`✅ کار مارکتینگ انجام شد: ${r.task.title}` + (r.task.result_url ? `\n${r.task.result_url}` : ''));
+  }
+  res.json(r);
 });
 
 // ==================== قیف فعال‌سازی ====================
