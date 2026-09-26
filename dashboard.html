@@ -2313,10 +2313,8 @@
 
     busy(btn, true);
     try {
-      const data = await api(`/api/conversations/${id}/reply`, {
-        method: 'POST',
-        body: JSON.stringify({ text })
-      });
+      // با json (نه body خام) تا هدر Content-Type ست شود؛ بدون آن سرور بدنه را نمی‌خواند
+      const data = await api(`/api/conversations/${id}/reply`, { method: 'POST', json: { text } });
       ta.value = ''; ta.style.height = 'auto';
       appendAgentMessage(data.message);
       setPendingBadge(data.pending || 0);
