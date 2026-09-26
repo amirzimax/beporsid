@@ -491,6 +491,9 @@
   .plan-card .btn { width: 100%; margin-top: auto; }
 
   /* ---------- knowledge base ---------- */
+  .ov-report { font-size: 15px; line-height: 2.1; }
+  .ov-report .ov-gap { height: 10px; }
+  .ov-report .ov-note { font-size: 14px; color: var(--ink-soft); background: var(--saffron-mist); border-radius: 10px; padding: 8px 12px; margin-top: 6px; line-height: 1.9; }
   .kb-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
   /* سؤال‌های بی‌جواب */
   .gaps { display: grid; gap: 10px; }
@@ -817,12 +820,11 @@
         </div>
 
         <div class="card">
-          <div class="card-head"><div><h2>کلید سایت شما</h2><p class="muted">این کلید داخل کد نصب قرار می‌گیرد و فروشگاه شما را شناسایی می‌کند.</p></div></div>
-          <div class="keybox">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--ink-faint);flex:none"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"/><path d="m21 2-9.6 9.6"/><circle cx="7.5" cy="15.5" r="5.5"/></svg>
-            <code id="site-key">—</code>
-            <button class="btn btn-outline" style="padding:6px 12px;font-size:12.5px" onclick="copyText(document.getElementById('site-key').textContent, 'کلید کپی شد')">کپی</button>
+          <div class="card-head">
+            <div><h2>گزارش ۷ روز گذشته</h2><p class="muted">همان گزارشی که شنبه‌ها در تلگرام یا با پیامک برایتان فرستاده می‌شود.</p></div>
+            <button class="btn btn-outline" onclick="loadOverviewReport(this)">به‌روزرسانی</button>
           </div>
+          <div id="ov-report" class="ov-report"><div class="kb-empty">در حال دریافت…</div></div>
         </div>
       </section>
 
@@ -943,10 +945,6 @@
             <input type="checkbox" id="weekly_report" style="width:16px;height:16px" onchange="saveSmsPreference(this, 'weekly_report_opt_out')" />
             دریافت گزارش هفتگی عملکرد دستیار (شنبه‌ها، در ربات تلگرام یا با پیامک)
           </label>
-          <div class="actions">
-            <button class="btn btn-outline" onclick="showWeeklyReport(this)">مشاهده‌ی گزارش ۷ روز گذشته</button>
-          </div>
-          <pre id="weekly-report-box" class="hidden" style="white-space:pre-wrap;font-family:inherit;font-size:13.5px;line-height:1.9;background:var(--line-soft);border-radius:10px;padding:14px 16px;margin-top:12px"></pre>
         </div>
       </section>
 
@@ -2110,7 +2108,6 @@
     $('mobile_side_offset').value = s.mobile_side_offset ?? 14;
     updatePreview();
 
-    $('site-key').textContent = s.site_key || '—';
     $('script-box').textContent =
 `<script>
   window.ChatbotWidgetConfig = {
@@ -2130,6 +2127,7 @@
     loadStats();
     loadKnowledge();
     loadGaps();
+    loadOverviewReport();
     loadProducts(true);
     loadBillingStatus();
     loadBillingPlans();
@@ -3821,15 +3819,20 @@
     }
   }
 
-  async function showWeeklyReport(btn) {
-    const box = $('weekly-report-box');
+  // گزارش ۷ روز گذشته در نمای کلی. عنوان و خط «پنل: …» متن تلگرامی این‌جا لازم نیست.
+  async function loadOverviewReport(btn) {
+    const box = $('ov-report');
     busy(btn, true);
     try {
       const d = await api('/api/weekly-report');
-      box.textContent = d.text;
-      box.classList.remove('hidden');
+      const lines = d.text.split('\n').slice(2).filter(l => !l.startsWith('پنل:'));
+      while (lines.length && !lines[0].trim()) lines.shift();
+      while (lines.length && !lines[lines.length - 1].trim()) lines.pop();
+      const hasGaps = lines.some(l => l.startsWith('📝'));
+      box.innerHTML = lines.map(l => l.trim() ? `<div class="${/^(⚠|📝)/u.test(l) ? 'ov-note' : ''}">${esc(l)}</div>` : '<div class="ov-gap"></div>').join('')
+        + (hasGaps ? `<div class="actions"><button class="btn btn-outline" onclick="go('knowledge')">مشاهده‌ی سؤال‌های بی‌جواب</button></div>` : '');
     } catch (e) {
-      toast(e.message, 'err');
+      box.innerHTML = `<div class="kb-empty"><span class="error">${esc(e.message)}</span></div>`;
     } finally { busy(btn, false); }
   }
 
