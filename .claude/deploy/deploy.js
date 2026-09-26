@@ -32,12 +32,18 @@ function walk(dir, base = dir) {
   return out;
 }
 const blogDir = path.join(ROOT, 'blog');
+// نقشه‌ی سایت پیش از هر انتشار از روی صفحه‌ها ساخته می‌شود؛ پوشه‌ی صفحه‌های فرود تازه
+// (هر پوشه‌ی ریشه با index.html و canonical به beporsid.com) هم خودکار منتشر می‌شود
+const { buildSitemap } = require(path.join(ROOT, 'scripts', 'build-sitemap.js'));
+const sitePages = buildSitemap();
+const landingDirs = [...new Set(sitePages.map(p => p.dir.split('/')[0]).filter(d => d && d !== 'blog'))];
 // فایل‌های استاتیکی که مستقیم روی ریشه‌ی beporsid.com (nginx) سرو می‌شن، نه اپ Node
 const STATIC_FILES = [
   'index.html', 'pay.html', 'robots.txt', 'sitemap.xml', 'og.jpg', 'enamad.png',
   // آیکون سایت: گوگل آیکون data: را نمی‌پذیرد و باید فایل واقعی و قابل‌خزش باشد
   'favicon.ico', 'favicon.svg', 'favicon-48.png', 'favicon-96.png', 'favicon-192.png', 'apple-touch-icon.png',
-  ...(fs.existsSync(blogDir) ? walk(blogDir).map(f => 'blog/' + f) : [])
+  ...(fs.existsSync(blogDir) ? walk(blogDir).map(f => 'blog/' + f) : []),
+  ...landingDirs.flatMap(d => walk(path.join(ROOT, d)).map(f => d + '/' + f))
 ];
 
 const md5 = p => crypto.createHash('md5').update(fs.readFileSync(p)).digest('hex');
