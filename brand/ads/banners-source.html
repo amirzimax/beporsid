@@ -115,6 +115,47 @@
   #c .mark { width: 34px; height: 34px; } #c .mark svg { width: 19px; height: 19px; }
   #c h2 { font-size: 17px; flex: 1; line-height: 1.35; }
   #c .cta { font-size: 14px; padding: 9px 16px; flex: none; }
+
+  /* ---------- ۱۲۸۰×۷۲۰ (۱۶:۹) تبلیغ تلگرام ---------- */
+  #t { width: 1280px; height: 720px; padding: 64px 70px; display: grid; grid-template-columns: 1fr 520px; gap: 56px; align-items: center; }
+  #t .col { display: flex; flex-direction: column; }
+  #t .pill { align-self: flex-start; display: inline-flex; align-items: center; gap: 10px; background: rgba(255,255,255,.16); border: 1.5px solid rgba(255,255,255,.3); padding: 8px 18px 8px 14px; border-radius: 999px; font-size: 21px; font-weight: 800; }
+  #t .pill svg { width: 28px; height: 28px; }
+  #t h2 { font-size: 58px; margin-top: 26px; line-height: 1.3; white-space: nowrap; }
+  #t .checks { margin-top: 30px; gap: 16px; }
+  #t .checks li { font-size: 25px; } #t .checks i { width: 32px; height: 32px; } #t .checks i svg { width: 19px; height: 19px; }
+  #t .foot { display: flex; align-items: center; gap: 22px; margin-top: 38px; }
+  #t .cta { font-size: 28px; padding: 18px 38px; }
+  #t .brand { font-size: 28px; } #t .brand .mark { width: 44px; height: 44px; } #t .brand .mark svg { width: 25px; height: 25px; }
+
+  /* پنجره‌ی سایت فروشگاه با ویجت چت باز */
+  #t .win { position: relative; height: 592px; background: #f4f7f7; border-radius: 22px; box-shadow: 0 30px 70px -25px rgba(0,0,0,.55); overflow: hidden; }
+  #t .win .bar { height: 38px; background: #e3eaea; display: flex; align-items: center; gap: 7px; padding: 0 16px; }
+  #t .win .bar i { width: 11px; height: 11px; border-radius: 50%; background: #c5d0d0; }
+  #t .win .bar span { margin-inline-start: 12px; flex: 1; height: 20px; border-radius: 6px; background: #fff; }
+  /* محتوای کم‌رنگ صفحه‌ی فروشگاه پشت ویجت */
+  #t .site { padding: 22px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; opacity: .55; }
+  #t .site div { height: 120px; border-radius: 12px; background: #dde6e6; }
+  #t .widget { position: absolute; left: 22px; bottom: 22px; width: 360px; background: #fff; border-radius: 20px; box-shadow: 0 18px 50px -12px rgba(8,50,48,.45); overflow: hidden; direction: rtl; }
+  #t .w-head { background: #12807a; color: #fff; display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+  #t .bot-av { width: 44px; height: 44px; border-radius: 50%; background: #fff; display: grid; place-items: center; flex: none; position: relative; }
+  #t .bot-av svg { width: 28px; height: 28px; }
+  #t .bot-av::after { content: ''; position: absolute; bottom: 1px; left: 1px; width: 12px; height: 12px; border-radius: 50%; background: #3ddc84; border: 2px solid #12807a; }
+  #t .w-head b { display: block; font-size: 17px; font-weight: 800; }
+  #t .w-head small { font-size: 13.5px; opacity: .9; font-weight: 600; }
+  #t .w-body { padding: 14px; display: grid; gap: 9px; background: #f7fafa; }
+  #t .w-body .msg { font-size: 15.5px; padding: 9px 13px; box-shadow: none; }
+  #t .w-body .me { background: #12807a; }
+  #t .w-body .bot { background: #fff; border: 1px solid #e3eaea; }
+  #t .w-body .card { background: #f3faf9; padding: 7px; margin-top: 7px; }
+  #t .w-body .thumb { width: 40px; height: 40px; } #t .w-body .thumb svg { width: 19px; height: 19px; }
+  #t .w-body .card b { font-size: 13.5px; } #t .w-body .card span { font-size: 13.5px; }
+  #t .typing { justify-self: end; background: #fff; border: 1px solid #e3eaea; border-radius: 16px; border-bottom-left-radius: 5px; padding: 12px 14px; display: flex; gap: 5px; }
+  #t .typing i { width: 8px; height: 8px; border-radius: 50%; background: #9fb3b5; }
+  #t .typing i:nth-child(2) { opacity: .7; } #t .typing i:nth-child(3) { opacity: .45; }
+  /* برچسب شناور «پاسخ در ۲ ثانیه» */
+  #t .fast { position: absolute; top: 70px; right: 22px; background: #f5b93f; color: #3a2503; font-weight: 900; font-size: 18px; padding: 10px 16px; border-radius: 14px; box-shadow: 0 10px 24px -10px rgba(0,0,0,.45); display: flex; align-items: center; gap: 8px; }
+  #t .fast svg { width: 22px; height: 22px; fill: #3a2503; }
 </style>
 </head>
 <body>
@@ -125,7 +166,47 @@
   <symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="arrow" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   <symbol id="case" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="3" fill="#3a2503"/><circle cx="9.5" cy="6.5" r="1.6" fill="#ffd98a"/></symbol>
+  <symbol id="robot" viewBox="0 0 32 32"><line x1="16" y1="3.5" x2="16" y2="8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="16" cy="3.5" r="2.2" fill="currentColor"/><rect x="5" y="8" width="22" height="17" rx="6" fill="currentColor"/><rect x="2" y="13" width="3" height="7" rx="1.5" fill="currentColor"/><rect x="27" y="13" width="3" height="7" rx="1.5" fill="currentColor"/><circle cx="11.5" cy="15.5" r="2.6" fill="#fff"/><circle cx="20.5" cy="15.5" r="2.6" fill="#fff"/><path d="M12 20.5q4 2.6 8 0" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></symbol>
+  <symbol id="bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+  <symbol id="headset" viewBox="0 0 24 24"><path d="M4 14v-2a8 8 0 0 1 16 0v2" fill="none" stroke="#3a2503" stroke-width="2.4" stroke-linecap="round"/><rect x="2.5" y="13" width="5" height="8" rx="2" fill="#3a2503"/><rect x="16.5" y="13" width="5" height="8" rx="2" fill="#3a2503"/></symbol>
 </svg>
+
+<div class="label">۱۲۸۰×۷۲۰ (۱۶:۹ تلگرام)</div>
+<div class="ad" id="t">
+  <div class="col">
+    <span class="pill"><svg style="color:#fff"><use href="#robot"/></svg>چت‌بات هوش مصنوعی فروش</span>
+    <h2>مشتری سوال می‌پرسد،<br><span class="y">چت‌بات جواب می‌دهد.</span></h2>
+    <ul class="checks">
+      <li><i><svg><use href="#check"/></svg></i>جواب ۲۴ ساعته با قیمت و موجودی واقعی</li>
+      <li><i><svg><use href="#check"/></svg></i>اتصال به شاپفا، ووکامرس و پرتال</li>
+      <li><i><svg><use href="#check"/></svg></i>نصب با یک خط کد، بدون برنامه‌نویس</li>
+    </ul>
+    <div class="foot">
+      <span class="cta">رایگان شروع کن <svg width="24" height="24"><use href="#arrow"/></svg></span>
+      <span class="brand"><span class="mark"><svg><use href="#logo"/></svg></span>beporsid.com</span>
+    </div>
+  </div>
+  <div class="win">
+    <div class="bar"><i></i><i></i><i></i><span></span></div>
+    <div class="site"><div></div><div></div><div></div><div></div><div></div><div></div></div>
+    <span class="fast"><svg><use href="#bolt"/></svg>پاسخ در ۲ ثانیه</span>
+    <div class="widget">
+      <div class="w-head">
+        <span class="bot-av"><svg style="color:#12807a"><use href="#robot"/></svg></span>
+        <div><b>دستیار هوشمند فروشگاه</b><small>آنلاین · همیشه در دسترس</small></div>
+      </div>
+      <div class="w-body">
+        <div class="msg me">هدفون بی‌سیم زیر ۲ میلیون دارید؟</div>
+        <div class="msg bot">بله! این دو مدل موجوده:
+          <div class="card"><span class="thumb"><svg><use href="#headset"/></svg></span><div><b>هدفون بلوتوثی مدل A</b><span>۱٬۶۵۰٬۰۰۰ تومان</span></div></div>
+          <div class="card"><span class="thumb"><svg><use href="#headset"/></svg></span><div><b>هدفون بلوتوثی مدل B</b><span>۱٬۸۹۰٬۰۰۰ تومان</span></div></div>
+        </div>
+        <div class="msg me">کدوم باتری بهتری داره؟</div>
+        <div class="typing"><i></i><i></i><i></i></div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="label">۳۰۰×۲۵۰</div>
 <div class="ad" id="a">
