@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  // تم ذخیره‌شده قبل از رندر اعمال می‌شود تا صفحه اول روشن و یک لحظه بعد تیره نشود
+  try { const t = localStorage.getItem('beporsid_theme'); if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+<title>چت بات ووکامرس | دستیار هوش مصنوعی فروش برای وردپرس | بپرسید</title>
+<meta name="description" content="چت بات هوش مصنوعی بپرسید به محصولات، قیمت و موجودی واقعی ووکامرس وصل می‌شود و ۲۴ ساعته جواب مشتری را می‌دهد. نصب با افزونه‌ی وردپرس در ۲ دقیقه، بدون کلید API.">
+<meta property="og:title" content="چت بات هوش مصنوعی برای ووکامرس">
+<meta property="og:description" content="چت بات هوش مصنوعی بپرسید به محصولات، قیمت و موجودی واقعی ووکامرس وصل می‌شود و ۲۴ ساعته جواب مشتری را می‌دهد. نصب با افزونه‌ی وردپرس در ۲ دقیقه، بدون کلید API.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="بپرسید">
+<meta property="og:locale" content="fa_IR">
+<meta property="og:url" content="https://beporsid.com/woocommerce-chatbot/">
+<meta property="og:image" content="https://beporsid.com/woocommerce-chatbot/video-cover.webp">
+<meta property="og:video" content="https://beporsid.com/woocommerce-chatbot/beporsid-woocommerce.mp4">
+<meta property="article:modified_time" content="2026-09-27">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#12807a">
+<link rel="canonical" href="https://beporsid.com/woocommerce-chatbot/">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "چت بات هوش مصنوعی برای ووکامرس",
+  "url": "https://beporsid.com/woocommerce-chatbot/",
+  "description": "چت بات هوش مصنوعی بپرسید به محصولات، قیمت و موجودی واقعی ووکامرس وصل می‌شود و ۲۴ ساعته جواب مشتری را می‌دهد. نصب با افزونه‌ی وردپرس در ۲ دقیقه، بدون کلید API.",
+  "inLanguage": "fa-IR",
+  "dateModified": "2026-09-27",
+  "about": {
+    "@id": "https://beporsid.com/#software"
+  },
+  "publisher": {
+    "@id": "https://beporsid.com/#organization"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "VideoObject",
+  "name": "آموزش نصب چت بات هوش مصنوعی بپرسید روی ووکامرس",
+  "description": "معرفی چت بات بپرسید و آموزش نصب افزونه‌ی وردپرس در ۴ قدم، بدون کلید API و بدون ویرایش قالب.",
+  "thumbnailUrl": "https://beporsid.com/woocommerce-chatbot/video-cover.webp",
+  "uploadDate": "2026-09-27",
+  "duration": "PT1M30S",
+  "contentUrl": "https://beporsid.com/woocommerce-chatbot/beporsid-woocommerce.mp4",
+  "inLanguage": "fa-IR"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "بپرسید",
+      "item": "https://beporsid.com/"
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": "چت بات ووکامرس",
+      "item": "https://beporsid.com/woocommerce-chatbot/"
+    }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "برای نصب چت بات روی ووکامرس به برنامه‌نویس نیاز دارم؟",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "نه. افزونه را مثل هر افزونه‌ی دیگری نصب می‌کنید و یک کد اتصال در آن می‌زنید. نه کلید API لازم است و نه ویرایش قالب."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "چت بات قیمت و موجودی را از کجا می‌داند؟",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "مستقیم از خود ووکامرس، با یک کلید فقط‌خواندنی که افزونه می‌سازد. هر تغییری در قیمت یا موجودی بدهید، دستیار از همان لحظه جواب درست را می‌دهد."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "آیا چت بات می‌تواند چیزی را در فروشگاه من تغییر دهد؟",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "نه. دسترسی کلید فقط خواندن است و بپرسید هیچ محصول، قیمت یا سفارشی را تغییر نمی‌دهد."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "اگر مشتری سؤالی بپرسد که دستیار جوابش را نداند چه می‌شود؟",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "حدس نمی‌زند؛ می‌گوید اطلاعاتش را ندارد و اگر راه تماس کارشناس را تنظیم کرده باشید، گفتگو را به شما می‌سپارد. آن سؤال در پنل هم فهرست می‌شود تا جوابش را اضافه کنید."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "قیمت چت بات ووکامرس بپرسید چقدر است؟",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "پلن آغازین رایگان است و هر ماه ۲۰۰ پاسخ دارد. پلن رشد ماهانه ۱٬۱۹۰٬۰۰۰ تومان با ۳۰۰۰ پاسخ است. جزئیات در صفحه‌ی تعرفه‌ها."
+      }
+    }
+  ]
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --firooze: #12807a; --firooze-deep: #0b5b57; --firooze-mist: #e6f2f1; --firooze-soft: #cfe6e4;
+    --saffron: #e0a13c; --saffron-mist: #fbf1df;
+    --ink: #13262b; --ink-soft: #5b7176; --ink-faint: #93a5a9;
+    --paper: #fcfbf8; --line: #e2e6e5; --line-soft: #eef1f0;
+    --radius: 18px;
+    --shadow-sm: 0 1px 2px rgba(19,38,43,.04), 0 6px 20px -10px rgba(19,38,43,.12);
+    --card: #fff;
+    --header-bg: rgba(252,251,248,.9);
+    --surface-deep: #13262b;
+    color-scheme: light;
+  }
+
+  /* ---------- تم تیره ---------- */
+  /* همان پالت صفحه‌ی اصلی و پنل داشبورد */
+  :root[data-theme="dark"] {
+    --firooze: #2fb3aa; --firooze-deep: #7fd6cf; --firooze-mist: #143634; --firooze-soft: #1f4c49;
+    --saffron: #e6ad52; --saffron-mist: #332a17;
+    --ink: #e6eeee; --ink-soft: #9fb3b5; --ink-faint: #6b8286;
+    --paper: #0f1a1c; --line: #27393d; --line-soft: #1f3034;
+    --card: #16262a;
+    --header-bg: rgba(15,26,28,.9);
+    --surface-deep: #0a1416;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px -10px rgba(0,0,0,.5);
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --firooze: #2fb3aa; --firooze-deep: #7fd6cf; --firooze-mist: #143634; --firooze-soft: #1f4c49;
+      --saffron: #e6ad52; --saffron-mist: #332a17;
+      --ink: #e6eeee; --ink-soft: #9fb3b5; --ink-faint: #6b8286;
+      --paper: #0f1a1c; --line: #27393d; --line-soft: #1f3034;
+      --card: #16262a;
+      --header-bg: rgba(15,26,28,.9);
+      --surface-deep: #0a1416;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px -10px rgba(0,0,0,.5);
+      color-scheme: dark;
+    }
+  }
+
+  /* دکمه‌ی تغییر تم در سربرگ */
+  .theme-btn {
+    display: grid; place-items: center; width: 34px; height: 34px; flex: none;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--card);
+    color: var(--ink-soft); cursor: pointer; transition: color .15s, border-color .15s;
+  }
+  .theme-btn:hover { color: var(--firooze); border-color: var(--firooze-soft); }
+  .theme-btn .ic-sun { display: none; }
+  :root[data-theme="dark"] .theme-btn .ic-sun { display: block; }
+  :root[data-theme="dark"] .theme-btn .ic-moon { display: none; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .theme-btn .ic-sun { display: block; }
+    :root:not([data-theme="light"]) .theme-btn .ic-moon { display: none; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Vazirmatn', Tahoma, sans-serif; background: var(--paper); color: var(--ink); line-height: 1.8; font-size: 16px; -webkit-font-smoothing: antialiased; }
+  a { color: var(--firooze); }
+  img, svg { max-width: 100%; }
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--saffron); outline-offset: 3px; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; background: var(--firooze); color: #fff !important; padding: 12px 24px; border-radius: 999px; font-weight: 700; font-size: 15px; border: 1.5px solid var(--firooze); transition: background .15s; }
+  .btn:hover { background: var(--firooze-deep); border-color: var(--firooze-deep); }
+
+  header { position: sticky; top: 0; z-index: 50; background: var(--header-bg); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+  .nav { display: flex; align-items: center; justify-content: space-between; height: 72px; gap: 20px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 21px; letter-spacing: -.02em; text-decoration: none; color: var(--ink) !important; }
+  .brand-mark { width: 36px; height: 36px; border-radius: 11px; background: var(--firooze); display: grid; place-items: center; flex: none; }
+  .brand-mark svg { width: 19px; height: 19px; fill: #fff; }
+  .nav-links { display: flex; align-items: center; gap: 26px; font-size: 15px; font-weight: 500; }
+  .nav-links a { text-decoration: none; color: var(--ink-soft) !important; }
+  .nav-links a:hover { color: var(--firooze) !important; }
+  @media (max-width: 760px) { .nav-links { display: none; } }
+
+  .crumbs { padding: 20px 0 0; font-size: 13px; color: var(--ink-faint); }
+  .crumbs a { color: var(--ink-faint); text-decoration: none; }
+  .crumbs a:hover { color: var(--firooze); }
+
+  article { padding: 24px 0 90px; }
+  .art-head { max-width: 46em; margin: 0 auto 44px; text-align: center; }
+  .kicker { display: inline-block; color: var(--firooze); font-weight: 700; font-size: 13.5px; letter-spacing: .02em; margin: 18px 0 16px; padding: 4px 12px; background: var(--firooze-mist); border-radius: 999px; }
+  h1 { font-size: clamp(28px, 3.6vw, 42px); font-weight: 900; letter-spacing: -.03em; line-height: 1.4; }
+  .art-meta { margin-top: 18px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; font-size: 13.5px; color: var(--ink-faint); }
+
+  .art-body { max-width: 46em; margin: 0 auto; font-size: 17px; color: var(--ink); }
+  .art-body > p { margin-bottom: 22px; color: var(--ink-soft); line-height: 1.95; }
+  .art-body h2 { font-size: 25px; font-weight: 800; letter-spacing: -.02em; margin: 48px 0 18px; color: var(--ink); }
+  .art-body h3 { font-size: 19px; font-weight: 700; margin: 30px 0 12px; color: var(--ink); }
+  .art-body ul, .art-body ol { margin: 0 0 22px; padding-inline-start: 24px; color: var(--ink-soft); }
+  .art-body li { margin-bottom: 10px; line-height: 1.9; }
+  .art-body strong { color: var(--ink); font-weight: 700; }
+  .art-body a { text-decoration: underline; text-decoration-color: var(--firooze-soft); text-underline-offset: 3px; }
+
+  .toc { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 26px; margin-bottom: 40px; }
+  .toc b { display: block; font-size: 14px; margin-bottom: 12px; }
+  .toc ol { margin: 0; padding-inline-start: 20px; font-size: 14.5px; color: var(--ink-soft); }
+  .toc li { margin-bottom: 7px; }
+  .toc a { text-decoration: none; color: var(--ink-soft); }
+  .toc a:hover { color: var(--firooze); }
+
+  .callout {
+    background: var(--firooze-mist); border: 1px solid var(--firooze-soft); border-radius: 14px;
+    padding: 20px 24px; margin: 28px 0; font-size: 15px; color: var(--firooze-deep); line-height: 1.85;
+  }
+  .callout b { display: block; margin-bottom: 6px; font-size: 14px; }
+
+  .checklist { list-style: none; padding: 0; margin: 0 0 22px; }
+  .checklist li { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; color: var(--ink-soft); line-height: 1.85; }
+  .checklist .n { flex: none; width: 28px; height: 28px; border-radius: 9px; background: var(--firooze); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 13px; }
+  .checklist li > div { flex: 1; min-width: 0; text-align: right; }
+
+  table.cmp { width: 100%; border-collapse: collapse; margin: 8px 0 26px; font-size: 14.5px; }
+  table.cmp th, table.cmp td { border: 1px solid var(--line); padding: 12px 14px; text-align: right; }
+  table.cmp th { background: var(--paper); font-weight: 700; }
+  table.cmp td { color: var(--ink-soft); }
+
+  .cta-box {
+    background: var(--surface-deep); color: #fff; border-radius: 24px; padding: 48px 36px; text-align: center;
+    margin: 56px 0 8px; position: relative; overflow: hidden;
+  }
+  .cta-box::before { content: ''; position: absolute; width: 340px; height: 340px; border-radius: 50%; background: radial-gradient(circle, rgba(18,128,122,.5), transparent 65%); top: -160px; right: -80px; }
+  .cta-box > * { position: relative; z-index: 1; }
+  .cta-box h2 { color: #fff; font-size: 24px; margin: 0 0 12px; }
+  .cta-box p { color: #a7bcc0; margin-bottom: 24px; font-size: 15px; }
+  .cta-box .btn { background: var(--saffron); border-color: var(--saffron); color: #3d2a06 !important; }
+  .cta-box .btn:hover { background: #eeb055; border-color: #eeb055; }
+
+  .faq-box { margin-top: 40px; }
+  .faq-item { border: 1px solid var(--line); border-radius: 14px; padding: 18px 22px; margin-bottom: 12px; background: var(--card); }
+  .faq-item h3 { margin: 0 0 8px; font-size: 16px; }
+  .faq-item p { margin: 0; color: var(--ink-soft); font-size: 15px; }
+
+  .share-row { display: flex; gap: 10px; align-items: center; justify-content: center; margin-top: 40px; font-size: 13.5px; color: var(--ink-faint); }
+
+  footer { padding: 40px 0 32px; border-top: 1px solid var(--line); margin-top: 40px; text-align: center; color: var(--ink-faint); font-size: 13.5px; }
+  footer a { color: var(--firooze); text-decoration: none; }
+
+  /* صفحه‌ی فرود */
+  .art-head .lead { font-size: 18px; color: var(--ink-soft); margin-top: 16px; line-height: 1.9; }
+  .hero-cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 24px; }
+  .btn-ghost { background: transparent !important; color: var(--firooze) !important; }
+  .btn-ghost:hover { background: var(--firooze-mist) !important; }
+  .fine-note { margin-top: 12px; font-size: 13.5px; color: var(--ink-faint); }
+  .video-box { max-width: 900px; margin: 0 auto 50px; }
+  .video-box video { width: 100%; height: auto; display: block; border-radius: 18px; box-shadow: var(--shadow-sm); background: #0c6560; }
+  .video-box .cap, .steps + p + img + .cap { text-align: center; font-size: 13.5px; color: var(--ink-faint); margin-top: 10px; }
+  .feat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin: 8px 0 26px; }
+  .feat-grid div { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; font-size: 15px; color: var(--ink-soft); line-height: 1.85; }
+  .feat-grid b { display: block; color: var(--ink); font-size: 16px; margin-bottom: 4px; }
+  .steps { list-style: none; padding: 0; margin: 0 0 22px; }
+  .steps li { margin-bottom: 28px; }
+  .steps .st { display: flex; gap: 12px; align-items: flex-start; color: var(--ink-soft); line-height: 1.9; }
+  .steps .n { flex: none; width: 30px; height: 30px; border-radius: 9px; background: var(--firooze); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 14px; margin-top: 2px; }
+  .art-body img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 14px; margin-top: 12px; display: block; }
+  .art-body img.wide { margin-bottom: 22px; }
+  @media (max-width: 640px) { .feat-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="/">
+      <span class="brand-mark"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.44 1.15 4.65 3 6.3V22l4.1-2.05c.93.2 1.9.3 2.9.3 5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg></span>
+      بپرسید
+    </a>
+    <nav class="nav-links">
+      <a href="/#features">امکانات</a>
+      <a href="/#plans">تعرفه‌ها</a>
+      <a href="/blog/">بلاگ</a>
+    </nav>
+    <button class="theme-btn" onclick="toggleTheme()" aria-label="تغییر حالت روشن و تیره" title="حالت روشن / تیره">
+        <svg class="ic-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+        <svg class="ic-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <a href="https://api.beporsid.com/dashboard.html" class="btn">شروع رایگان</a>
+  </div>
+</header>
+
+<div class="wrap crumbs"><a href="/">بپرسید</a> ‹ چت بات ووکامرس</div>
+<article>
+  <div class="wrap">
+    <div class="art-head">
+      <span class="kicker">افزونه‌ی وردپرس و ووکامرس</span>
+      <h1>چت بات هوش مصنوعی برای ووکامرس</h1>
+      <p class="lead">دستیاری که به محصولات، قیمت و موجودی واقعی فروشگاه ووکامرسی شما وصل می‌شود و ۲۴ ساعته به سؤال مشتری‌ها جواب می‌دهد. نصب با افزونه‌ی وردپرس، بدون ساخت کلید API و بدون ویرایش قالب.</p>
+      <div class="hero-cta">
+        <a href="https://api.beporsid.com/dashboard.html" class="btn">ساخت حساب رایگان</a>
+        <a href="/downloads/beporsid-chatbot.zip" class="btn btn-ghost" download>دانلود افزونه</a>
+      </div>
+      <div class="fine-note">۲۰۰ پاسخ رایگان هر ماه · بدون کارت بانکی</div>
+    </div>
+
+    <div class="video-box">
+      <video controls preload="none" poster="/woocommerce-chatbot/video-cover.webp" width="1280" height="720" playsinline>
+        <source src="/woocommerce-chatbot/beporsid-woocommerce.mp4" type="video/mp4">
+      </video>
+      <div class="cap">معرفی و آموزش نصب افزونه‌ی بپرسید (۱ دقیقه و ۳۰ ثانیه)</div>
+    </div>
+
+    <div class="art-body">
+      <h2 id="chera">چرا فروشگاه ووکامرسی به چت بات هوش مصنوعی نیاز دارد؟</h2>
+      <p>بیشتر سؤال‌های مشتری یک فروشگاه ووکامرسی تکراری‌اند: «این موجوده؟»، «قیمتش چنده؟»، «کی می‌رسه؟»، «رنگ دیگه‌ش رو دارید؟». اگر جواب این سؤال‌ها همان لحظه داده نشود، بخش بزرگی از مشتری‌ها، به‌خصوص شب‌ها و روزهای تعطیل، از خرید منصرف می‌شوند. چت بات بپرسید این سؤال‌ها را از روی داده‌ی زنده‌ی خود فروشگاه جواب می‌دهد، نه از یک فایل قدیمی.</p>
+
+      <h2 id="emkanat">چت بات ووکامرس بپرسید چه کارهایی می‌کند؟</h2>
+      <div class="feat-grid">
+        <div><b>قیمت و موجودی واقعی</b>محصولات را مستقیم از ووکامرس می‌خواند؛ قیمت یا موجودی را هیچ‌وقت از خودش نمی‌سازد.</div>
+        <div><b>پیشنهاد جایگزین</b>وقتی کالایی ناموجود است، مدل یا رنگ نزدیک را پیشنهاد می‌دهد.</div>
+        <div><b>کارت محصول در چت</b>محصول را با عکس، قیمت و لینک خرید نشان می‌دهد.</div>
+        <div><b>پیگیری سفارش</b>وضعیت سفارش را با کد سفارش می‌گوید.</div>
+        <div><b>ارجاع به کارشناس</b>برای لغو سفارش، مشکل پرداخت یا شکایت، گفتگو را به شما می‌سپارد؛ از پنل یا با Reply در تلگرام جواب می‌دهید.</div>
+        <div><b>پایگاه دانش</b>شرایط ارسال، مرجوعی و هر سؤال دیگری را از فایل‌ها و صفحه‌های سایتتان یاد می‌گیرد.</div>
+      </div>
+
+      <h2 id="nasb">نصب چت بات روی ووکامرس در ۴ قدم</h2>
+      <ol class="steps">
+        <li>
+          <div class="st"><span class="n">۱</span><div><strong>افزونه را نصب کنید.</strong> <a href="/downloads/beporsid-chatbot.zip" download>فایل افزونه</a> را دانلود کنید و در پیشخوان وردپرس از <strong>افزونه‌ها ← افزودن ← بارگذاری افزونه</strong> نصب و فعال کنید.</div></div>
+        </li>
+        <li>
+          <div class="st"><span class="n">۲</span><div><strong>در پنل بپرسید کد اتصال بسازید.</strong> <a href="https://api.beporsid.com/dashboard.html">ثبت‌نام کنید</a> و به <strong>تنظیمات ← اتصال فروشگاه ← ووکامرس</strong> بروید و «ساخت کد اتصال افزونه» را بزنید.</div></div>
+          <img src="/woocommerce-chatbot/step-4.webp" alt="ساخت کد اتصال افزونه‌ی وردپرس در پنل بپرسید" width="1280" height="800" loading="lazy">
+        </li>
+        <li>
+          <div class="st"><span class="n">۳</span><div><strong>کد را در افزونه وارد کنید.</strong> در پیشخوان وردپرس منوی «بپرسید» را باز کنید، کد را بچسبانید و «اتصال به بپرسید» را بزنید.</div></div>
+          <img src="/woocommerce-chatbot/step-1.webp" alt="وارد کردن کد اتصال در افزونه‌ی بپرسید در پیشخوان وردپرس" width="1280" height="800" loading="lazy">
+        </li>
+        <li>
+          <div class="st"><span class="n">۴</span><div><strong>تمام!</strong> افزونه خودش یک کلید فقط‌خواندنی ووکامرس می‌سازد، محصولات را به دستیار وصل می‌کند و ویجت چت را روی همه‌ی صفحه‌های سایت قرار می‌دهد.</div></div>
+          <img src="/woocommerce-chatbot/step-2.webp" alt="وضعیت اتصال موفق افزونه‌ی بپرسید به ووکامرس" width="1280" height="800" loading="lazy">
+        </li>
+      </ol>
+      <p>نتیجه: وقتی مشتری در سایت شما می‌پرسد «قاب برای آیفون ۱۵ دارید؟»، دستیار از روی موجودی واقعی ووکامرس جواب می‌دهد و کارت محصول را نشان می‌دهد:</p>
+      <img class="wide" src="/woocommerce-chatbot/step-3.webp" alt="چت بات بپرسید روی فروشگاه ووکامرس با کارت محصول و قیمت" width="1280" height="800" loading="lazy">
+
+      <h2 id="dasti">روش دستی: اتصال با کلید REST API</h2>
+      <p>اگر نمی‌خواهید افزونه نصب کنید، می‌توانید اتصال را دستی انجام دهید: در ووکامرس از <strong>تنظیمات ← پیشرفته ← REST API</strong> یک کلید با دسترسی «خواندن» بسازید، کلید عمومی و خصوصی را در پنل بپرسید (تنظیمات ← اتصال فروشگاه ← ووکامرس) وارد کنید و کد نصب ویجت را از بخش «کد نصب» در قالب سایت بگذارید. نتیجه همان است؛ افزونه فقط این کارها را خودکار انجام می‌دهد.</p>
+
+      <h2 id="amniat">امنیت فروشگاه شما</h2>
+      <ul>
+        <li>کلیدی که افزونه می‌سازد فقط دسترسی <strong>خواندن</strong> دارد؛ بپرسید نمی‌تواند محصول، قیمت یا سفارشی را تغییر دهد.</li>
+        <li>کلید رمزنگاری‌شده ذخیره می‌شود و با «قطع اتصال» یا حذف افزونه، خودکار پاک می‌شود.</li>
+        <li>برای خواندن محصولات، سایت باید روی HTTPS باشد. جزئیات بیشتر در <a href="/privacy/">سیاست حریم خصوصی</a>.</li>
+      </ul>
+
+      <div class="cta-box">
+        <h2>همین امروز روی فروشگاه ووکامرسی‌تان امتحانش کنید</h2>
+        <p>پلن رایگان ۲۰۰ پاسخ در ماه، بدون کارت بانکی. پلن‌های پولی از ماهانه ۱٬۱۹۰٬۰۰۰ تومان.</p>
+        <a href="https://api.beporsid.com/dashboard.html" class="btn">ساخت حساب رایگان</a>
+      </div>
+
+      <div class="faq-box">
+        <h2 id="soalat">سوالات متداول</h2>
+        <div class="faq-item">
+          <h3>برای نصب چت بات روی ووکامرس به برنامه‌نویس نیاز دارم؟</h3>
+          <p>نه. افزونه را مثل هر افزونه‌ی دیگری نصب می‌کنید و یک کد اتصال در آن می‌زنید. نه کلید API لازم است و نه ویرایش قالب.</p>
+        </div>
+        <div class="faq-item">
+          <h3>چت بات قیمت و موجودی را از کجا می‌داند؟</h3>
+          <p>مستقیم از خود ووکامرس، با یک کلید فقط‌خواندنی که افزونه می‌سازد. هر تغییری در قیمت یا موجودی بدهید، دستیار از همان لحظه جواب درست را می‌دهد.</p>
+        </div>
+        <div class="faq-item">
+          <h3>آیا چت بات می‌تواند چیزی را در فروشگاه من تغییر دهد؟</h3>
+          <p>نه. دسترسی کلید فقط خواندن است و بپرسید هیچ محصول، قیمت یا سفارشی را تغییر نمی‌دهد.</p>
+        </div>
+        <div class="faq-item">
+          <h3>اگر مشتری سؤالی بپرسد که دستیار جوابش را نداند چه می‌شود؟</h3>
+          <p>حدس نمی‌زند؛ می‌گوید اطلاعاتش را ندارد و اگر راه تماس کارشناس را تنظیم کرده باشید، گفتگو را به شما می‌سپارد. آن سؤال در پنل هم فهرست می‌شود تا جوابش را اضافه کنید.</p>
+        </div>
+        <div class="faq-item">
+          <h3>قیمت چت بات ووکامرس بپرسید چقدر است؟</h3>
+          <p>پلن آغازین رایگان است و هر ماه ۲۰۰ پاسخ دارد. پلن رشد ماهانه ۱٬۱۹۰٬۰۰۰ تومان با ۳۰۰۰ پاسخ است. جزئیات در صفحه‌ی تعرفه‌ها.</p>
+        </div>
+      </div>
+
+      <p style="margin-top:32px">برای مقایسه با بقیه‌ی ابزارها، <a href="/blog/behtarin-chatbot-farsi/">بهترین چت بات‌های هوش مصنوعی فارسی</a> را بخوانید.</p>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <div class="wrap">© <span id="y"></span> بپرسید — <a href="/blog/">بلاگ</a> · <a href="/">صفحه‌ی اصلی</a> · <a href="/terms/">شرایط استفاده</a> · <a href="/privacy/">حریم خصوصی</a></div>
+</footer>
+<script>document.getElementById('y').textContent = new Date().getFullYear();</script>
+
+<script>
+  // تم روشن/تیره: اگر کاربر انتخابی نکرده باشد، تنظیم سیستم عامل ملاک است
+  function currentTheme() {
+    const t = document.documentElement.dataset.theme;
+    if (t === 'dark' || t === 'light') return t;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  function toggleTheme() {
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem('beporsid_theme', next); } catch (e) {}
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', next === 'dark' ? '#0f1a1c' : '#12807a');
+  }
+</script>
+</body>
+</html>

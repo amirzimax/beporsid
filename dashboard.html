@@ -1011,6 +1011,17 @@
                 <li><a href="https://beporsid.com/downloads/beporsid-chatbot.zip" download>دانلود افزونه (فایل zip)</a> و نصب در وردپرس: افزونه‌ها ← افزودن ← بارگذاری افزونه.</li>
                 <li>کد اتصال بسازید و در منوی «بپرسید» پیشخوان وردپرس وارد کنید.</li>
               </ol>
+              <button type="button" class="btn btn-outline" style="margin:8px 0 4px;padding:7px 14px;font-size:13px" onclick="toggleWpVideo(this)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                ویدیوی آموزش نصب (۱:۳۰)
+              </button>
+              <div id="wp-video" class="hidden" style="margin:8px 0 6px">
+                <!-- ویدیو از سایت اصلی می‌آید و تا باز نشود دانلود نمی‌شود -->
+                <video controls preload="none" playsinline poster="https://beporsid.com/woocommerce-chatbot/video-cover.webp" style="width:100%;border-radius:12px;display:block;background:#0c6560">
+                  <source src="https://beporsid.com/woocommerce-chatbot/beporsid-woocommerce.mp4" type="video/mp4">
+                </video>
+                <p class="fine" style="margin-top:6px">راهنمای کامل نصب در <a href="https://beporsid.com/woocommerce-chatbot/" target="_blank" rel="noopener">صفحه‌ی چت بات ووکامرس</a>.</p>
+              </div>
               <div id="wp-token-box" class="hidden">
                 <div class="keybox"><code id="wp-token" dir="ltr"></code>
                   <button class="btn btn-outline" style="padding:6px 12px;font-size:12.5px" onclick="copyText($('wp-token').textContent, 'کد اتصال کپی شد')">کپی</button></div>
@@ -3838,6 +3849,13 @@
     if (!el) return;
     el.textContent = s.wp_connected_at ? 'وصل: ' + (s.wp_site_url || '').replace(/^https?:\/\//, '') : (s.wp_token_created ? 'کد ساخته شده، منتظر اتصال' : 'وصل نیست');
     el.className = 'badge ' + (s.wp_connected_at ? 'connected' : 'pending');
+  }
+
+  function toggleWpVideo(btn) {
+    const box = $('wp-video');
+    const show = box.classList.toggle('hidden') === false;
+    const v = box.querySelector('video');
+    if (show) v.play().catch(() => {}); else v.pause();
   }
 
   async function createWpToken(btn) {
