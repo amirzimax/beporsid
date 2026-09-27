@@ -74,6 +74,11 @@ db.exec(`
     weekly_report_opt_out INTEGER DEFAULT 0,
     weekly_report_week TEXT,
 
+    -- افزونه‌ی وردپرس: هش کد اتصال (خود کد فقط یک بار به کاربر نشان داده می‌شود) و سایت وصل‌شده
+    wp_token_hash TEXT,
+    wp_site_url TEXT,
+    wp_connected_at TEXT,
+
     plan TEXT DEFAULT 'trial',
     plan_expires_at TEXT,
 
@@ -121,7 +126,10 @@ const migrations = {
   widget_seen_at: "ALTER TABLE shops ADD COLUMN widget_seen_at TEXT",
   widget_domain: "ALTER TABLE shops ADD COLUMN widget_domain TEXT",
   weekly_report_opt_out: "ALTER TABLE shops ADD COLUMN weekly_report_opt_out INTEGER DEFAULT 0",
-  weekly_report_week: "ALTER TABLE shops ADD COLUMN weekly_report_week TEXT"
+  weekly_report_week: "ALTER TABLE shops ADD COLUMN weekly_report_week TEXT",
+  wp_token_hash: "ALTER TABLE shops ADD COLUMN wp_token_hash TEXT",
+  wp_site_url: "ALTER TABLE shops ADD COLUMN wp_site_url TEXT",
+  wp_connected_at: "ALTER TABLE shops ADD COLUMN wp_connected_at TEXT"
 };
 for (const [col, sql] of Object.entries(migrations)) {
   if (!existingColumns.includes(col)) db.exec(sql);
@@ -1232,6 +1240,31 @@ function setSmsMarketingOptOut(shopId, optOut) {
   return getShopById(shopId);
 }
 
+// ---------- افزونه‌ی وردپرس ----------
+function setWpTokenHash(shopId, hash) {
+  db.prepare('UPDATE shops SET wp_token_hash = ? WHERE id = ?').run(hash, shopId);
+}
+
+function getShopByWpTokenHash(hash) {
+  return db.prepare('SELECT * FROM shops WHERE wp_token_hash = ?').get(hash) || null;
+}
+
+function markWpConnected(shopId, siteUrl) {
+  db.prepare(`UPDATE shops SET wp_site_url = ?, wp_connected_at = datetime('now') WHERE id = ?`).run(siteUrl, shopId);
+  return getShopById(shopId);
+}
+
+// قطع اتصال از طرف افزونه. کلیدهای ووکامرس فقط وقتی پاک می‌شوند که از همین سایت آمده باشند،
+// تا اگر فروشنده جداگانه فروشگاه دیگری را دستی وصل کرده، دست‌نخورده بماند.
+function clearWpConnection(shopId) {
+  const shop = getShopById(shopId);
+  if (shop && shop.wp_site_url && shop.woo_site_domain === shop.wp_site_url) {
+    db.prepare('UPDATE shops SET woo_site_domain = NULL, woo_consumer_key = NULL, woo_consumer_secret_enc = NULL WHERE id = ?').run(shopId);
+  }
+  db.prepare('UPDATE shops SET wp_site_url = NULL, wp_connected_at = NULL WHERE id = ?').run(shopId);
+  return getShopById(shopId);
+}
+
 function setWeeklyReportOptOut(shopId, optOut) {
   db.prepare('UPDATE shops SET weekly_report_opt_out = ? WHERE id = ?').run(optOut ? 1 : 0, shopId);
   return getShopById(shopId);
@@ -1525,7 +1558,10 @@ function toPublicShop(shop) {
     sms_marketing_opt_out: !!shop.sms_marketing_opt_out,
     widget_seen_at: shop.widget_seen_at || null,
     widget_domain: shop.widget_domain || null,
-    weekly_report_opt_out: !!shop.weekly_report_opt_out
+    weekly_report_opt_out: !!shop.weekly_report_opt_out,
+    wp_site_url: shop.wp_site_url || null,
+    wp_connected_at: shop.wp_connected_at || null,
+    wp_token_created: !!shop.wp_token_hash
   };
 }
 
@@ -1555,6 +1591,10 @@ module.exports = {
   markWidgetSeen,
   listActivation,
   setWeeklyReportOptOut,
+  setWpTokenHash,
+  getShopByWpTokenHash,
+  markWpConnected,
+  clearWpConnection,
   periodStats,
   listWeeklyReportShops,
   claimWeeklyReport,

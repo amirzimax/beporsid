@@ -39,7 +39,7 @@ const sitePages = buildSitemap();
 const landingDirs = [...new Set(sitePages.map(p => p.dir.split('/')[0]).filter(d => d && d !== 'blog'))];
 // فایل‌های استاتیکی که مستقیم روی ریشه‌ی beporsid.com (nginx) سرو می‌شن، نه اپ Node
 const STATIC_FILES = [
-  'index.html', 'pay.html', 'robots.txt', 'sitemap.xml', 'og.jpg', 'enamad.png',
+  'index.html', 'pay.html', 'downloads/beporsid-chatbot.zip', 'robots.txt', 'sitemap.xml', 'og.jpg', 'enamad.png',
   // آیکون سایت: گوگل آیکون data: را نمی‌پذیرد و باید فایل واقعی و قابل‌خزش باشد
   'favicon.ico', 'favicon.svg', 'favicon-48.png', 'favicon-96.png', 'favicon-192.png', 'apple-touch-icon.png',
   ...(fs.existsSync(blogDir) ? walk(blogDir).map(f => 'blog/' + f) : []),

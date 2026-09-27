@@ -494,6 +494,9 @@
   .ov-report { font-size: 15px; line-height: 2.1; }
   .ov-report .ov-gap { height: 10px; }
   .ov-report .ov-note { font-size: 14px; color: var(--ink-soft); background: var(--saffron-mist); border-radius: 10px; padding: 8px 12px; margin-top: 6px; line-height: 1.9; }
+  .wp-plugin-box { border: 1.5px solid var(--firooze-soft); background: var(--firooze-mist); border-radius: 14px; padding: 16px 18px; }
+  .wp-plugin-box .wp-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .wp-plugin-box .wp-steps { margin: 0 0 4px; padding-inline-start: 20px; font-size: 13.5px; line-height: 2; }
   .kb-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
   /* سؤال‌های بی‌جواب */
   .gaps { display: grid; gap: 10px; }
@@ -998,7 +1001,26 @@
 
           <!-- ---- ووکامرس ---- -->
           <div id="panel-woocommerce" class="hidden">
-            <p class="muted" style="margin-bottom:18px">برای دسترسی بات به لیست محصولات می‌توانید بات را به سایت ووکامرس خود متصل کنید.</p>
+            <div class="wp-plugin-box">
+              <div class="wp-head">
+                <b>روش آسان: افزونه‌ی وردپرس بپرسید</b>
+                <span class="badge pending" id="wp-status">وصل نیست</span>
+              </div>
+              <p class="fine" style="margin:6px 0 12px">بدون ساخت کلید API و بدون ویرایش قالب: افزونه را نصب کنید، کد اتصال را در آن بزنید؛ محصولات و ویجت خودکار وصل می‌شوند.</p>
+              <ol class="wp-steps">
+                <li><a href="https://beporsid.com/downloads/beporsid-chatbot.zip" download>دانلود افزونه (فایل zip)</a> و نصب در وردپرس: افزونه‌ها ← افزودن ← بارگذاری افزونه.</li>
+                <li>کد اتصال بسازید و در منوی «بپرسید» پیشخوان وردپرس وارد کنید.</li>
+              </ol>
+              <div id="wp-token-box" class="hidden">
+                <div class="keybox"><code id="wp-token" dir="ltr"></code>
+                  <button class="btn btn-outline" style="padding:6px 12px;font-size:12.5px" onclick="copyText($('wp-token').textContent, 'کد اتصال کپی شد')">کپی</button></div>
+                <p class="fine" style="margin-top:6px">این کد فقط همین یک بار نشان داده می‌شود. اگر گمش کردید، کد تازه بسازید؛ کد قبلی باطل می‌شود.</p>
+              </div>
+              <div class="actions" style="margin-top:10px">
+                <button class="btn btn-primary" onclick="createWpToken(this)">ساخت کد اتصال افزونه</button>
+              </div>
+            </div>
+            <p class="muted" style="margin:22px 0 18px">یا اتصال دستی با کلید REST API ووکامرس:</p>
             <div class="field">
               <label for="woo_site_domain">آدرس سایت</label>
               <input type="url" id="woo_site_domain" dir="ltr" placeholder="https://mystore.com" />
@@ -2088,6 +2110,7 @@
     $('shopfa_site_domain').value = s.shopfa_site_domain || '';
     $('shopfa_username').value = s.shopfa_username || '';
     $('woo_site_domain').value = s.woo_site_domain || '';
+    renderWpStatus(s);
     $('woo_consumer_key').value = s.woo_consumer_key || '';
     $('portal_site_domain').value = s.portal_site_domain || '';
     $('portal_username').value = s.portal_username || '';
@@ -3806,6 +3829,29 @@
     marketing_opt_out: ['پیامک‌های مناسبتی و تخفیف‌ها برایتان ارسال می‌شود', 'دیگر پیامک تبلیغاتی دریافت نمی‌کنید'],
     weekly_report_opt_out: ['گزارش هفتگی شنبه‌ها برایتان ارسال می‌شود', 'دیگر گزارش هفتگی دریافت نمی‌کنید']
   };
+
+  /* ---------- افزونه‌ی وردپرس ---------- */
+  function renderWpStatus(s) {
+    const el = $('wp-status');
+    if (!el) return;
+    el.textContent = s.wp_connected_at ? 'وصل: ' + (s.wp_site_url || '').replace(/^https?:\/\//, '') : (s.wp_token_created ? 'کد ساخته شده، منتظر اتصال' : 'وصل نیست');
+    el.className = 'badge ' + (s.wp_connected_at ? 'connected' : 'pending');
+  }
+
+  async function createWpToken(btn) {
+    if (currentShop && currentShop.wp_token_created && !confirm('کد اتصال قبلی باطل می‌شود و افزونه‌ای که با آن وصل است، دیگر نمی‌تواند وضعیت را بخواند (ویجت و محصولات کار می‌کنند). کد تازه ساخته شود؟')) return;
+    busy(btn, true);
+    try {
+      const { token } = await api('/api/wp-plugin/token', { method: 'POST' });
+      $('wp-token').textContent = token;
+      $('wp-token-box').classList.remove('hidden');
+      currentShop.wp_token_created = true;
+      renderWpStatus(currentShop);
+    } catch (e) {
+      toast(e.message, 'err');
+    } finally { busy(btn, false); }
+  }
+
   async function saveSmsPreference(el, field) {
     try {
       const d = await api('/api/sms-preferences', { method: 'POST', json: { [field]: !el.checked } });

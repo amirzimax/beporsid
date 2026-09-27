@@ -105,6 +105,10 @@ const {
   markWidgetSeen,
   listActivation,
   setWeeklyReportOptOut,
+  setWpTokenHash,
+  getShopByWpTokenHash,
+  markWpConnected,
+  clearWpConnection,
   recordKnowledgeGap,
   listKnowledgeGaps,
   countOpenKnowledgeGaps,
@@ -1648,6 +1652,90 @@ app.post('/api/woocommerce-credentials', requireAuth, async (req, res) => {
   res.json({ shop: publicShop(updated) });
 });
 
+// ==================== افزونه‌ی وردپرس بپرسید ====================
+// صاحب فروشگاه در پنل یک «کد اتصال» می‌سازد و در افزونه وارد می‌کند. افزونه خودش یک کلید
+// «فقط خواندنی» ووکامرس می‌سازد و همراه همین کد می‌فرستد؛ یعنی فروشنده نه کلید API می‌سازد و
+// نه کد نصب ویجت را دستی در قالب می‌گذارد. از کد اتصال فقط هش نگه داشته می‌شود.
+const wpPluginLimiter = rateLimit(Object.assign({}, limiterOpts, {
+  windowMs: 15 * 60 * 1000,
+  limit: 40,
+  message: { error: 'تعداد درخواست‌ها زیاد بود. چند دقیقه‌ی دیگر دوباره تلاش کنید.' }
+}));
+const WP_TOKEN_RE = /^bpwp_[a-f0-9]{40}$/;
+const hashWpToken = t => crypto.createHash('sha256').update(String(t)).digest('hex');
+
+function shopFromWpToken(req) {
+  const token = String((req.body && req.body.token) || '').trim();
+  return WP_TOKEN_RE.test(token) ? getShopByWpTokenHash(hashWpToken(token)) : null;
+}
+
+const WP_BAD_TOKEN = 'کد اتصال نامعتبر است. از پنل بپرسید (تنظیمات ← اتصال فروشگاه ← ووکامرس) یک کد تازه بسازید.';
+
+// ساخت کد تازه؛ کد قبلی باطل می‌شود. خود کد فقط همین یک بار برگردانده می‌شود.
+app.post('/api/wp-plugin/token', requireAuth, (req, res) => {
+  const token = 'bpwp_' + crypto.randomBytes(20).toString('hex');
+  setWpTokenHash(req.shop.id, hashWpToken(token));
+  res.json({ token });
+});
+
+app.post('/api/wp-plugin/connect', wpPluginLimiter, async (req, res) => {
+  const shop = shopFromWpToken(req);
+  if (!shop) return res.status(401).json({ error: WP_BAD_TOKEN });
+
+  const site = String(req.body.site_url || '').trim().replace(/\/+$/, '');
+  if (!/^https?:\/\/[^/]+/i.test(site)) return res.status(400).json({ error: 'آدرس سایت نامعتبر است.' });
+  try { await assertPublicUrl(site); }
+  catch (e) { return res.status(400).json({ error: e.message }); }
+
+  // کلید ووکامرس اختیاری است (سایت وردپرسی بدون فروشگاه هم فقط ویجت می‌گیرد). اگر تست
+  // اتصال ناموفق باشد، ویجت باز هم وصل می‌شود و افزونه دلیلش را نشان می‌دهد.
+  let wooConnected = false, wooError = null;
+  const ck = String(req.body.consumer_key || '').trim(), cs = String(req.body.consumer_secret || '').trim();
+  if (ck && cs) {
+    try {
+      const t = await wooFetch(site, '/wc/v3/products', { per_page: 1, consumer_key: ck, consumer_secret: cs });
+      if (t.ok) {
+        updateWooCredentials(shop.id, { woo_site_domain: site, woo_consumer_key: ck, woo_consumer_secret: cs });
+        wooConnected = true;
+      } else {
+        let msg = '';
+        try { const d = await t.json(); msg = d && d.message ? d.message : ''; } catch (e) { /* پاسخ JSON نبود */ }
+        wooError = `سرور بپرسید نتوانست محصولات را بخواند (کد ${t.status}${msg ? '، ' + msg : ''}). اگر سایت روی HTTPS نیست یا افزونه‌ی امنیتی دسترسی REST API را بسته، این مورد را بررسی کنید.`;
+      }
+    } catch (e) {
+      wooError = 'سرور بپرسید به سایت شما دسترسی نداشت. ممکن است فایروال میزبان درخواست‌های بیرونی را بسته باشد.';
+    }
+  }
+
+  const updated = markWpConnected(shop.id, site);
+  const platform = getCommercePlatform(updated);
+  const warning = wooConnected && platform !== 'woocommerce'
+    ? `در پنل بپرسید فروشگاه دیگری (${platform === 'shopfa' ? 'شاپفا' : 'پرتال'}) هم وصل است و فعلاً همان استفاده می‌شود. برای استفاده از محصولات همین سایت، آن اتصال را در پنل قطع کنید.`
+    : null;
+  alerts.notify(`🔌 افزونه‌ی وردپرس وصل شد\n${updated.shop_name || updated.owner_name || 'فروشگاه'} · ${site}${wooConnected ? '' : '\n(بدون اتصال محصولات)'}`);
+  res.json({
+    ok: true, site_key: updated.site_key, shop_name: updated.shop_name || '',
+    woo_connected: wooConnected, woo_error: wooError, warning
+  });
+});
+
+app.post('/api/wp-plugin/status', wpPluginLimiter, (req, res) => {
+  const shop = shopFromWpToken(req);
+  if (!shop) return res.status(401).json({ error: WP_BAD_TOKEN });
+  const plan = billing.PLANS[shop.plan] || billing.PLANS.starter;
+  res.json({
+    connected: !!shop.wp_connected_at, site_key: shop.site_key, shop_name: shop.shop_name || '',
+    plan: plan.name, platform: getCommercePlatform(shop)
+  });
+});
+
+app.post('/api/wp-plugin/disconnect', wpPluginLimiter, (req, res) => {
+  const shop = shopFromWpToken(req);
+  if (!shop) return res.status(401).json({ error: WP_BAD_TOKEN });
+  clearWpConnection(shop.id);
+  res.json({ ok: true });
+});
+
 app.post('/api/portal-credentials', requireAuth, async (req, res) => {
   const { portal_site_domain, portal_username, portal_password } = req.body;
   if (!portal_site_domain || !portal_username || !portal_password) {
@@ -2807,6 +2895,14 @@ app.get('/api/chat/config', apiLimiter, (req, res) => {
   const autoText = (shop.auto_message_text || '').trim();
   res.set('Cache-Control', 'public, max-age=60');
   res.json({
+    // ظاهر ویجت؛ افزونه‌ی وردپرس از همین‌جا می‌خواند تا تغییر رنگ و جای ویجت در پنل بدون
+    // نصب دوباره روی سایت اعمال شود (ویجت فعلی این فیلدها را نادیده می‌گیرد)
+    color: shop.theme_color || null,
+    side: shop.widget_side || 'left',
+    desktopBottom: shop.desktop_bottom ?? 20,
+    desktopSideOffset: shop.desktop_side_offset ?? 20,
+    mobileBottom: shop.mobile_bottom ?? 20,
+    mobileSideOffset: shop.mobile_side_offset ?? 14,
     prechatForm: !!shop.prechat_form_enabled,
     autoMessage: shop.auto_message_enabled && autoText ? {
       text: autoText,
