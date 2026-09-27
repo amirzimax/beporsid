@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<!--
+  ویدیوی معرفی و آموزش افزونه (۱۲۸۰×۷۲۰، حدود ۹۰ ثانیه، بی‌صدا).
+  همه‌ی حرکت‌ها انیمیشن CSS با تأخیر مطلق (ثانیه از شروع ویدیو) هستند؛ اسکریپت ضبط انیمیشن‌ها را
+  متوقف می‌کند و برای هر فریم زمانشان را جلو می‌برد، پس خروجی دقیق و تکرارپذیر است.
+  --s: شروع صحنه، --d: مدت صحنه، --t: زمان ظاهر شدن یک جزء
+-->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1280px; height: 720px; overflow: hidden; background: #0c6560; font-family: 'Vazirmatn', Tahoma, sans-serif; }
+  #stage { position: relative; width: 1280px; height: 720px; overflow: hidden; color: #fff;
+    background: linear-gradient(150deg, #19a79e 0%, #12807a 55%, #0c6560 100%); }
+  #stage::before { content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 85% -10%, rgba(255,255,255,.25), transparent 45%), radial-gradient(rgba(255,255,255,.08) 1.2px, transparent 1.3px) 0 0 / 16px 16px; }
+
+  .scene { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0;
+    animation: scene calc(var(--d) * 1s) linear calc(var(--s) * 1s) both; }
+  @keyframes scene { 0% { opacity: 0; transform: scale(.985); } 5% { opacity: 1; transform: none; } 94% { opacity: 1; } 100% { opacity: 0; } }
+
+  .pop { animation: pop .6s cubic-bezier(.2,.8,.3,1.2) calc(var(--t) * 1s) both; }
+  @keyframes pop { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: none; } }
+  .fade { animation: fade .5s ease calc(var(--t) * 1s) both; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  /* فقط برای مدتی دیده می‌شود (مثل «در حال نوشتن») */
+  .blip { animation: blip calc(var(--len) * 1s) linear calc(var(--t) * 1s) both; }
+  @keyframes blip { 0% { opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { opacity: 0; } }
+
+  h1 { font-weight: 900; letter-spacing: -.03em; line-height: 1.25; text-align: center; }
+  .y { color: #ffd98a; }
+  .cap { position: absolute; bottom: 34px; right: 50%; transform: translateX(50%); background: rgba(6,40,38,.72); padding: 12px 28px; border-radius: 999px; font-size: 26px; font-weight: 800; white-space: nowrap; }
+  .kicker { display: inline-flex; align-items: center; gap: 10px; background: rgba(255,255,255,.16); border: 1.5px solid rgba(255,255,255,.3); border-radius: 999px; padding: 8px 20px; font-size: 22px; font-weight: 800; }
+  .stepno { display: inline-grid; place-items: center; width: 58px; height: 58px; border-radius: 16px; background: #f5b93f; color: #3a2503; font-size: 30px; font-weight: 900; }
+
+  /* ویجت نمایشی */
+  .widget { width: 460px; background: #fff; border-radius: 22px; box-shadow: 0 30px 60px -20px rgba(0,0,0,.5); overflow: hidden; color: #10292d; }
+  .w-head { background: #12807a; color: #fff; display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+  .bot-av { width: 44px; height: 44px; border-radius: 50%; background: #fff; display: grid; place-items: center; }
+  .bot-av svg { width: 28px; height: 28px; color: #12807a; }
+  .w-head b { display: block; font-size: 18px; font-weight: 800; } .w-head small { font-size: 14px; opacity: .9; font-weight: 600; }
+  .w-body { padding: 16px; display: grid; gap: 10px; background: #f7fafa; min-height: 330px; align-content: start; }
+  .msg { font-size: 17px; font-weight: 600; padding: 10px 14px; border-radius: 16px; line-height: 1.55; max-width: 88%; }
+  .me { background: #12807a; color: #fff; justify-self: start; border-bottom-right-radius: 5px; }
+  .bot { background: #fff; border: 1px solid #e3eaea; justify-self: end; border-bottom-left-radius: 5px; }
+  .card { display: flex; align-items: center; gap: 10px; background: #f3faf9; border-radius: 12px; margin-top: 8px; padding: 7px; }
+  .thumb { width: 46px; height: 46px; flex: none; border-radius: 10px; background: linear-gradient(145deg, #ffe3a3, #f5b93f); display: grid; place-items: center; }
+  .thumb svg { width: 22px; height: 22px; }
+  .card b { display: block; font-size: 15px; font-weight: 800; } .card span { color: #12807a; font-weight: 800; font-size: 15px; }
+  .typing { justify-self: end; background: #fff; border: 1px solid #e3eaea; border-radius: 16px; padding: 13px 16px; display: flex; gap: 6px; }
+  .typing i { width: 9px; height: 9px; border-radius: 50%; background: #9fb3b5; animation: dot 1s infinite; }
+  .typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+  @keyframes dot { 0%, 100% { transform: translateY(0); opacity: .5; } 50% { transform: translateY(-5px); opacity: 1; } }
+
+  /* اسکرین‌شات با قاب و حلقه‌ی اشاره */
+  .shot { position: relative; width: 1024px; border-radius: 14px; overflow: hidden; box-shadow: 0 30px 70px -25px rgba(0,0,0,.6); border: 1px solid rgba(255,255,255,.35); }
+  .shot img { display: block; width: 100%; }
+  .ring { position: absolute; width: 150px; height: 70px; margin: -35px 0 0 -75px; border: 5px solid #f5b93f; border-radius: 16px; box-shadow: 0 0 0 9999px rgba(0,0,0,.28);
+    animation: ring 1.2s ease-in-out calc(var(--t) * 1s) infinite both; }
+  @keyframes ring { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+  /* صحنه‌های اسکرین‌شات از بالا چیده می‌شوند تا زیرنویس پایین روی تصویر نیفتد */
+  .scene.top { justify-content: flex-start; padding-top: 34px; }
+  .steptitle { display: flex; align-items: center; gap: 16px; font-size: 34px; font-weight: 900; margin-bottom: 22px; }
+
+  .feat { display: grid; grid-template-columns: repeat(2, 460px); gap: 22px; margin-top: 34px; }
+  .feat div { background: rgba(255,255,255,.14); border: 1.5px solid rgba(255,255,255,.28); border-radius: 20px; padding: 22px 24px; font-size: 25px; font-weight: 800; display: flex; align-items: center; gap: 14px; }
+  .feat i { width: 40px; height: 40px; border-radius: 50%; background: #fff; display: grid; place-items: center; flex: none; }
+  .feat i svg { width: 22px; height: 22px; stroke: #12807a; }
+  .cta { display: inline-flex; align-items: center; gap: 12px; background: #f5b93f; color: #3a2503; font-weight: 900; font-size: 34px; padding: 20px 46px; border-radius: 999px; box-shadow: 0 14px 30px -12px rgba(0,0,0,.5); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="robot" viewBox="0 0 32 32"><line x1="16" y1="3.5" x2="16" y2="8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="16" cy="3.5" r="2.2" fill="currentColor"/><rect x="5" y="8" width="22" height="17" rx="6" fill="currentColor"/><rect x="2" y="13" width="3" height="7" rx="1.5" fill="currentColor"/><rect x="27" y="13" width="3" height="7" rx="1.5" fill="currentColor"/><circle cx="11.5" cy="15.5" r="2.6" fill="#fff"/><circle cx="20.5" cy="15.5" r="2.6" fill="#fff"/><path d="M12 20.5q4 2.6 8 0" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></symbol>
+  <symbol id="case" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="3" fill="#3a2503"/><circle cx="9.5" cy="6.5" r="1.6" fill="#ffd98a"/></symbol>
+  <symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="botbubble" viewBox="0 0 100 100">
+    <path d="M50 12C27 12 9 27.5 9 46.5c0 9.6 4.6 18.3 12 24.5V88l16.3-8.4c4 1 8.3 1.5 12.7 1.5 23 0 41-15.5 41-34.6S73 12 50 12z" fill="#fff"/>
+    <rect x="28" y="30" width="44" height="32" rx="12" fill="#12807a"/><circle cx="40" cy="44" r="5.2" fill="#fff"/><circle cx="60" cy="44" r="5.2" fill="#fff"/>
+    <path d="M41 53.5q9 5 18 0" stroke="#fff" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+    <line x1="50" y1="30" x2="50" y2="23" stroke="#12807a" stroke-width="3.2" stroke-linecap="round"/><circle cx="50" cy="21" r="3.6" fill="#f5b93f"/>
+  </symbol>
+</svg>
+
+<div id="stage">
+
+  <!-- ۱. معرفی: ۰ تا ۶ -->
+  <div class="scene" style="--s:0;--d:6">
+    <svg class="pop" style="--t:.3;width:190px;height:190px;filter:drop-shadow(0 16px 26px rgba(0,0,0,.3))"><use href="#botbubble"/></svg>
+    <h1 class="pop" style="--t:1;font-size:72px;margin-top:18px">بپرسید</h1>
+    <div class="pop kicker" style="--t:1.6;margin-top:18px">چت‌بات هوش مصنوعی فروش برای وردپرس و ووکامرس</div>
+  </div>
+
+  <!-- ۲. مشکل: ۶ تا ۱۳ -->
+  <div class="scene" style="--s:6;--d:7">
+    <h1 class="pop" style="--t:6.4;font-size:58px">ساعت ۲ بامداد،<br><span class="y">مشتری سؤال می‌پرسد…</span></h1>
+    <div class="widget pop" style="--t:7.4;margin-top:30px;width:520px">
+      <div class="w-body" style="min-height:0">
+        <div class="msg me pop" style="--t:7.9">سلام، این قاب برای آیفون ۱۵ هست؟ فردا لازمش دارم</div>
+        <div class="msg bot fade" style="--t:9.6;color:#9aa9ab;font-weight:600">… بدون جواب</div>
+      </div>
+    </div>
+    <div class="cap fade" style="--t:10.3">و فردا صبح، از فروشگاه دیگری خرید کرده.</div>
+  </div>
+
+  <!-- ۳. راه‌حل: ۱۳ تا ۳۰ -->
+  <div class="scene" style="--s:13;--d:17">
+    <div style="display:flex;align-items:center;gap:60px">
+      <div style="width:520px">
+        <div class="kicker pop" style="--t:13.3">با بپرسید</div>
+        <h1 class="pop" style="--t:13.8;font-size:54px;text-align:right;margin-top:18px">دستیار هوش مصنوعی،<br><span class="y">همان لحظه جواب می‌دهد.</span></h1>
+        <div class="pop" style="--t:15;font-size:24px;font-weight:700;margin-top:18px;opacity:.95;line-height:1.8">از روی قیمت و موجودی واقعی فروشگاه شما، ۲۴ ساعت، ۷ روز هفته.</div>
+      </div>
+      <div class="widget pop" style="--t:14.5">
+        <div class="w-head"><span class="bot-av"><svg><use href="#robot"/></svg></span><div><b>دستیار فروشگاه</b><small>آنلاین · همیشه در دسترس</small></div></div>
+        <div class="w-body">
+          <div class="msg me pop" style="--t:16">قاب برای آیفون ۱۵ دارید؟</div>
+          <div class="typing blip" style="--t:17;--len:1.8"><i></i><i></i><i></i></div>
+          <div class="msg bot pop" style="--t:18.9;margin-top:-54px">بله، این مدل الان موجوده:
+            <div class="card"><span class="thumb"><svg><use href="#case"/></svg></span><div><b>قاب مگسیف شفاف آیفون ۱۵</b><span>۴۹۰٬۰۰۰ تومان</span></div></div>
+          </div>
+          <div class="msg me pop" style="--t:22">کی به دستم می‌رسه؟</div>
+          <div class="msg bot pop" style="--t:24">سفارش امروز تا ساعت ۱۴، همان روز ارسال می‌شود.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ۴. قدم ۱: ۳۰ تا ۳۸ -->
+  <div class="scene" style="--s:30;--d:8">
+    <div class="kicker pop" style="--t:30.2">نصب در ۴ قدم</div>
+    <div class="steptitle pop" style="--t:30.6;margin-top:24px"><span class="stepno">۱</span>افزونه را نصب کنید</div>
+    <div class="pop" style="--t:31.4;display:flex;align-items:center;gap:40px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.3);border-radius:24px;padding:34px 46px">
+      <div style="text-align:center"><div style="width:110px;height:130px;border-radius:14px;background:#fff;color:#12807a;display:grid;place-items:center;font-weight:900;font-size:26px;margin:0 auto">ZIP</div><div style="margin-top:12px;font-size:20px;font-weight:700;direction:ltr">beporsid-chatbot.zip</div></div>
+      <div style="font-size:44px">←</div>
+      <div style="font-size:26px;font-weight:800;line-height:2">پیشخوان وردپرس<br>افزونه‌ها ← افزودن<br>بارگذاری افزونه ← فعال‌سازی</div>
+    </div>
+    <div class="cap fade" style="--t:32.5">دقیقاً مثل هر افزونه‌ی دیگر وردپرس.</div>
+  </div>
+
+  <!-- ۵. قدم ۲: ۳۸ تا ۴۷ -->
+  <div class="scene top" style="--s:38;--d:9">
+    <div class="steptitle pop" style="--t:38.2"><span class="stepno">۲</span>در پنل بپرسید، کد اتصال بسازید</div>
+    <div class="shot pop" style="--t:38.8;width:800px">
+      <img src="gallery-4.png">
+      <span class="ring" style="--t:40;left:67.5%;top:81.7%;width:170px"></span>
+    </div>
+    <div class="cap fade" style="--t:41">تنظیمات ← اتصال فروشگاه ← ووکامرس ← «ساخت کد اتصال افزونه»</div>
+  </div>
+
+  <!-- ۶. قدم ۳: ۴۷ تا ۵۶ -->
+  <div class="scene top" style="--s:47;--d:9">
+    <div class="steptitle pop" style="--t:47.2"><span class="stepno">۳</span>کد را در افزونه وارد کنید</div>
+    <div class="shot pop" style="--t:47.8;width:800px">
+      <img src="gallery-1.png">
+      <span class="ring" style="--t:49;left:76.2%;top:45.9%;width:170px;height:66px"></span>
+    </div>
+    <div class="cap fade" style="--t:50">منوی «بپرسید» ← کد را بچسبانید ← «اتصال به بپرسید»</div>
+  </div>
+
+  <!-- ۷. قدم ۴: ۵۶ تا ۶۴ -->
+  <div class="scene top" style="--s:56;--d:8">
+    <div class="steptitle pop" style="--t:56.2"><span class="stepno">۴</span>تمام! همه‌چیز خودکار وصل شد</div>
+    <div class="shot pop" style="--t:56.8;width:800px">
+      <img src="gallery-2.png">
+      <span class="ring" style="--t:58;left:75%;top:36%;width:300px;height:130px;margin:-65px 0 0 -150px"></span>
+    </div>
+    <div class="cap fade" style="--t:59">محصولات، قیمت و موجودی ووکامرس + ویجت چت روی سایت. بدون کلید API.</div>
+  </div>
+
+  <!-- ۸. نتیجه: ۶۴ تا ۷۲ -->
+  <div class="scene top" style="--s:64;--d:8">
+    <div class="steptitle pop" style="--t:64.2">نتیجه: فروشنده‌ی ۲۴ ساعته روی سایت شما</div>
+    <div class="shot pop" style="--t:64.8;width:880px"><img src="gallery-3.png"></div>
+  </div>
+
+  <!-- ۹. امکانات: ۷۲ تا ۸۰ -->
+  <div class="scene" style="--s:72;--d:8">
+    <h1 class="pop" style="--t:72.2;font-size:52px">امکانات بپرسید</h1>
+    <div class="feat">
+      <div class="pop" style="--t:72.8"><i><svg><use href="#check"/></svg></i>قیمت و موجودی واقعی</div>
+      <div class="pop" style="--t:73.2"><i><svg><use href="#check"/></svg></i>پیشنهاد محصول جایگزین</div>
+      <div class="pop" style="--t:73.6"><i><svg><use href="#check"/></svg></i>ارجاع به کارشناس انسانی</div>
+      <div class="pop" style="--t:74"><i><svg><use href="#check"/></svg></i>پیگیری سفارش</div>
+      <div class="pop" style="--t:74.4"><i><svg><use href="#check"/></svg></i>پایگاه دانش از فایل و سایت</div>
+      <div class="pop" style="--t:74.8"><i><svg><use href="#check"/></svg></i>جواب از تلگرام خودتان</div>
+    </div>
+  </div>
+
+  <!-- ۱۰. دعوت: ۸۰ تا ۹۰ -->
+  <div class="scene" style="--s:80;--d:10">
+    <svg class="pop" style="--t:80.3;width:150px;height:150px;filter:drop-shadow(0 16px 26px rgba(0,0,0,.3))"><use href="#botbubble"/></svg>
+    <h1 class="pop" style="--t:80.8;font-size:58px;margin-top:14px">همین امروز <span class="y">رایگان</span> شروع کنید</h1>
+    <div class="pop" style="--t:81.5;font-size:26px;font-weight:700;margin-top:12px;opacity:.95">۲۰۰ پاسخ رایگان هر ماه · بدون کارت بانکی</div>
+    <div class="pop" style="--t:82.2;margin-top:32px"><span class="cta">beporsid.com</span></div>
+  </div>
+
+</div>
+</body>
+</html>

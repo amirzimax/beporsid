@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<!-- تصاویر صفحه‌ی افزونه در مارکت‌ها (ژاکت، راست‌چین): کاور ۷۰۰×۷۰۰، تصویر کوچک ۴۰۰، آیکون ۸۰، کاور ویدیو -->
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #555; font-family: 'Vazirmatn', Tahoma, sans-serif; padding: 24px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+  .ad { position: relative; overflow: hidden; direction: rtl; color: #fff; background: linear-gradient(150deg, #19a79e 0%, #12807a 55%, #0c6560 100%); }
+  .ad::before { content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(circle at 85% -10%, rgba(255,255,255,.28), transparent 45%), radial-gradient(rgba(255,255,255,.09) 1.2px, transparent 1.3px) 0 0 / 16px 16px; }
+  .ad > * { position: relative; z-index: 1; }
+  .y { color: #ffd98a; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,.16); border: 1.5px solid rgba(255,255,255,.3); border-radius: 999px; font-weight: 800; }
+  h2 { font-weight: 900; letter-spacing: -.03em; line-height: 1.3; }
+  .chat { display: grid; gap: 8px; }
+  .msg { font-weight: 600; border-radius: 16px; line-height: 1.5; }
+  .me { background: #12807a; color: #fff; justify-self: start; border-bottom-right-radius: 5px; }
+  .bot { background: #fff; color: #10292d; justify-self: end; border: 1px solid #e3eaea; border-bottom-left-radius: 5px; }
+  .card { display: flex; align-items: center; gap: 10px; background: #f3faf9; border-radius: 12px; margin-top: 8px; padding: 7px; }
+  .thumb { flex: none; border-radius: 10px; background: linear-gradient(145deg, #ffe3a3, #f5b93f); display: grid; place-items: center; }
+  .card b { display: block; color: #10292d; font-weight: 800; } .card span { color: #12807a; font-weight: 800; }
+  .widget { background: #fff; border-radius: 20px; box-shadow: 0 24px 50px -16px rgba(0,0,0,.45); overflow: hidden; }
+  .w-head { background: #12807a; color: #fff; display: flex; align-items: center; gap: 10px; }
+  .bot-av { border-radius: 50%; background: #fff; display: grid; place-items: center; flex: none; }
+  .w-head b { display: block; font-weight: 800; } .w-head small { opacity: .9; font-weight: 600; }
+  .w-body { background: #f7fafa; }
+  .tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tags span { background: #fff; color: #0b5b57; font-weight: 800; border-radius: 999px; }
+
+  /* ---------- کاور اول ۷۰۰ ---------- */
+  #c1 { width: 700px; height: 700px; padding: 46px 48px 40px; display: flex; flex-direction: column; }
+  #c1 .pill { align-self: flex-start; font-size: 17px; padding: 6px 16px 6px 12px; } #c1 .pill svg { width: 22px; height: 22px; }
+  #c1 h2 { font-size: 52px; margin-top: 18px; }
+  #c1 .sub { font-size: 21px; font-weight: 700; opacity: .92; margin-top: 8px; }
+  #c1 .widget { margin-top: 26px; width: 440px; align-self: flex-end; }
+  #c1 .w-head { padding: 12px 14px; } #c1 .bot-av { width: 38px; height: 38px; } #c1 .bot-av svg { width: 24px; height: 24px; }
+  #c1 .w-head b { font-size: 15.5px; } #c1 .w-head small { font-size: 12.5px; }
+  #c1 .w-body { padding: 12px; } #c1 .msg { font-size: 15px; padding: 8px 13px; }
+  #c1 .thumb { width: 40px; height: 40px; } #c1 .thumb svg { width: 20px; height: 20px; } #c1 .card b, #c1 .card span { font-size: 13.5px; }
+  #c1 .tags { margin-top: auto; } #c1 .tags span { font-size: 16px; padding: 7px 16px; }
+
+  /* ---------- کاور دوم ۷۰۰: سه قدم ---------- */
+  #c2 { width: 700px; height: 700px; padding: 48px; display: flex; flex-direction: column; }
+  #c2 h2 { font-size: 46px; }
+  #c2 .steps { margin-top: 32px; display: grid; gap: 18px; }
+  #c2 .step { display: flex; align-items: center; gap: 20px; background: rgba(255,255,255,.14); border: 1.5px solid rgba(255,255,255,.28); border-radius: 20px; padding: 24px 22px; }
+  #c2 .n { flex: none; width: 62px; height: 62px; border-radius: 17px; background: #f5b93f; color: #3a2503; font-weight: 900; font-size: 32px; display: grid; place-items: center; }
+  #c2 .step b { display: block; font-size: 26px; font-weight: 900; } #c2 .step small { font-size: 17.5px; opacity: .92; font-weight: 600; }
+  #c2 .tags { margin-top: auto; justify-content: center; } #c2 .tags span { font-size: 16px; padding: 7px 15px; }
+
+  /* ---------- تصویر کوچک ۴۰۰ ---------- */
+  #t4 { width: 400px; height: 400px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
+  #t4 svg.bubble { width: 200px; height: 200px; filter: drop-shadow(0 14px 24px rgba(0,0,0,.28)); }
+  #t4 .name { font-size: 64px; font-weight: 900; line-height: 1.1; }
+  #t4 .role { font-size: 19px; font-weight: 800; color: #ffd98a; }
+
+  /* ---------- آیکون ۸۰ ---------- */
+  #i80 { width: 80px; height: 80px; display: grid; place-items: center; border-radius: 0; }
+  #i80::before { display: none; }
+  #i80 svg { width: 62px; height: 62px; }
+
+  /* ---------- کاور ویدیو ۱۲۸۰×۷۲۰ ---------- */
+  #vc { width: 1280px; height: 720px; padding: 70px 76px; display: grid; grid-template-columns: 1fr 470px; gap: 60px; align-items: center; }
+  #vc .pill { font-size: 22px; padding: 8px 20px 8px 14px; } #vc .pill svg { width: 28px; height: 28px; }
+  #vc h2 { font-size: 60px; margin-top: 24px; white-space: nowrap; }
+  #vc .sub { font-size: 27px; font-weight: 700; opacity: .92; margin-top: 14px; }
+  #vc .play { margin-top: 38px; display: inline-flex; align-items: center; gap: 16px; font-size: 26px; font-weight: 900; }
+  #vc .play i { width: 84px; height: 84px; border-radius: 50%; background: #f5b93f; display: grid; place-items: center; box-shadow: 0 12px 30px -10px rgba(0,0,0,.5); }
+  #vc .play i svg { width: 36px; height: 36px; fill: #3a2503; margin-left: -6px; }
+  #vc .widget { width: 470px; }
+  #vc .w-head { padding: 14px 16px; } #vc .bot-av { width: 44px; height: 44px; } #vc .bot-av svg { width: 28px; height: 28px; }
+  #vc .w-head b { font-size: 18px; } #vc .w-head small { font-size: 14px; }
+  #vc .w-body { padding: 14px; } #vc .msg { font-size: 17px; padding: 10px 14px; }
+  #vc .thumb { width: 46px; height: 46px; } #vc .thumb svg { width: 22px; height: 22px; } #vc .card b, #vc .card span { font-size: 15px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="robot" viewBox="0 0 32 32"><line x1="16" y1="3.5" x2="16" y2="8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="16" cy="3.5" r="2.2" fill="currentColor"/><rect x="5" y="8" width="22" height="17" rx="6" fill="currentColor"/><rect x="2" y="13" width="3" height="7" rx="1.5" fill="currentColor"/><rect x="27" y="13" width="3" height="7" rx="1.5" fill="currentColor"/><circle cx="11.5" cy="15.5" r="2.6" fill="#fff"/><circle cx="20.5" cy="15.5" r="2.6" fill="#fff"/><path d="M12 20.5q4 2.6 8 0" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></symbol>
+  <symbol id="case" viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="3" fill="#3a2503"/><circle cx="9.5" cy="6.5" r="1.6" fill="#ffd98a"/></symbol>
+  <symbol id="wp" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5 8l3.5 10L12 9l3.5 9L19 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></symbol>
+  <symbol id="botbubble" viewBox="0 0 100 100">
+    <path d="M50 12C27 12 9 27.5 9 46.5c0 9.6 4.6 18.3 12 24.5V88l16.3-8.4c4 1 8.3 1.5 12.7 1.5 23 0 41-15.5 41-34.6S73 12 50 12z" fill="#fff"/>
+    <rect x="28" y="30" width="44" height="32" rx="12" fill="#12807a"/><circle cx="40" cy="44" r="5.2" fill="#fff"/><circle cx="60" cy="44" r="5.2" fill="#fff"/>
+    <path d="M41 53.5q9 5 18 0" stroke="#fff" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+    <line x1="50" y1="30" x2="50" y2="23" stroke="#12807a" stroke-width="3.2" stroke-linecap="round"/><circle cx="50" cy="21" r="3.6" fill="#f5b93f"/>
+  </symbol>
+</svg>
+
+<!-- کاور اول -->
+<div class="ad" id="c1">
+  <span class="pill"><svg style="color:#fff"><use href="#wp"/></svg>افزونه‌ی وردپرس و ووکامرس</span>
+  <h2>چت‌بات هوش مصنوعی<br><span class="y">بپرسید</span></h2>
+  <div class="sub">فروشنده‌ی ۲۴ ساعته‌ی فروشگاه شما</div>
+  <div class="widget">
+    <div class="w-head"><span class="bot-av"><svg style="color:#12807a"><use href="#robot"/></svg></span><div><b>دستیار فروشگاه</b><small>آنلاین · همیشه در دسترس</small></div></div>
+    <div class="w-body chat">
+      <div class="msg me">قاب مگسیف آیفون ۱۵ موجوده؟</div>
+      <div class="msg bot">بله! الان ۳ عدد موجوده:
+        <div class="card"><span class="thumb"><svg><use href="#case"/></svg></span><div><b>قاب مگسیف شفاف</b><span>۴۹۰٬۰۰۰ تومان</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="tags"><span>اتصال با یک کد</span><span>بدون کلید API</span><span>کاملاً فارسی</span></div>
+</div>
+
+<!-- کاور دوم -->
+<div class="ad" id="c2">
+  <h2>راه‌اندازی در <span class="y">۳ قدم</span></h2>
+  <div class="steps">
+    <div class="step"><span class="n">۱</span><div><b>افزونه را نصب کنید</b><small>مثل هر افزونه‌ی دیگر وردپرس</small></div></div>
+    <div class="step"><span class="n">۲</span><div><b>کد اتصال را وارد کنید</b><small>از پنل بپرسید، با یک کلیک</small></div></div>
+    <div class="step"><span class="n">۳</span><div><b>تمام! دستیار آماده است</b><small>محصولات و ویجت خودکار وصل می‌شوند</small></div></div>
+  </div>
+  <div class="tags"><span>قیمت و موجودی واقعی</span><span>پیشنهاد جایگزین</span><span>ارجاع به کارشناس</span><span>پیگیری سفارش</span></div>
+</div>
+
+<!-- تصویر کوچک -->
+<div class="ad" id="t4">
+  <svg class="bubble"><use href="#botbubble"/></svg>
+  <div class="name">بپرسید</div>
+  <div class="role">چت‌بات هوش مصنوعی فروش</div>
+</div>
+
+<!-- آیکون -->
+<div class="ad" id="i80"><svg><use href="#botbubble"/></svg></div>
+
+<!-- کاور ویدیو -->
+<div class="ad" id="vc">
+  <div>
+    <span class="pill"><svg style="color:#fff"><use href="#wp"/></svg>افزونه‌ی وردپرس بپرسید</span>
+    <h2>چت‌بات هوش مصنوعی<br><span class="y">در کمتر از ۲ دقیقه</span></h2>
+    <div class="sub">نصب بدون کلید API و بدون ویرایش قالب</div>
+    <span class="play"><i><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></i>ویدیوی آموزش و معرفی</span>
+  </div>
+  <div class="widget">
+    <div class="w-head"><span class="bot-av"><svg style="color:#12807a"><use href="#robot"/></svg></span><div><b>دستیار فروشگاه</b><small>آنلاین · همیشه در دسترس</small></div></div>
+    <div class="w-body chat">
+      <div class="msg me">قاب برای آیفون ۱۵ دارید؟</div>
+      <div class="msg bot">بله، این مدل الان موجوده:
+        <div class="card"><span class="thumb"><svg><use href="#case"/></svg></span><div><b>قاب مگسیف شفاف</b><span>۴۹۰٬۰۰۰ تومان</span></div></div>
+      </div>
+      <div class="msg me">کی به دستم می‌رسه؟</div>
+      <div class="msg bot">سفارش امروز، ۲ تا ۳ روز کاری.</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

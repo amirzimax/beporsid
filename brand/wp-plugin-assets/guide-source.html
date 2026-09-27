@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>راهنمای نصب افزونه‌ی چت‌بات بپرسید</title>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<!-- فایل آموزش افزونه (خروجی PDF با Playwright). -->
+<style>
+  @page { size: A4; margin: 16mm 15mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Vazirmatn', Tahoma, sans-serif; color: #13262b; font-size: 11.5pt; line-height: 1.95; margin: 0; }
+  .cover { height: 250mm; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+    background: linear-gradient(150deg, #19a79e, #12807a 55%, #0c6560); color: #fff; border-radius: 10mm; page-break-after: always; }
+  .cover svg { width: 42mm; height: 42mm; }
+  .cover h1 { font-size: 30pt; font-weight: 900; margin: 6mm 0 2mm; }
+  .cover p { font-size: 14pt; font-weight: 700; margin: 0; opacity: .95; }
+  .cover .v { margin-top: 12mm; font-size: 11pt; opacity: .85; }
+  h2 { font-size: 17pt; font-weight: 900; color: #0b5b57; margin: 0 0 3mm; display: flex; align-items: center; gap: 3mm; }
+  h2 .n { display: inline-grid; place-items: center; width: 10mm; height: 10mm; border-radius: 3mm; background: #f5b93f; color: #3a2503; font-size: 14pt; }
+  h3 { font-size: 13pt; font-weight: 800; margin: 6mm 0 1mm; }
+  .sec { page-break-inside: avoid; margin-bottom: 8mm; }
+  img { width: 100%; border: 1px solid #d6dfde; border-radius: 3mm; margin: 2mm 0 1mm; }
+  .cap { font-size: 9.5pt; color: #5b7176; text-align: center; margin-bottom: 3mm; }
+  .box { background: #e6f2f1; border: 1px solid #cfe6e4; border-radius: 3mm; padding: 3mm 5mm; margin: 3mm 0; font-size: 10.5pt; }
+  .warn { background: #fbf1df; border-color: #f0dcb0; }
+  code { direction: ltr; unicode-bidi: embed; background: #eef1f0; padding: 0 1.5mm; border-radius: 1mm; font-size: 10pt; }
+  ul, ol { padding-inline-start: 6mm; margin: 1mm 0 3mm; }
+  li { margin-bottom: 1.5mm; }
+  .page { page-break-before: always; }
+  table { width: 100%; border-collapse: collapse; font-size: 10.5pt; margin: 2mm 0 4mm; }
+  td, th { border: 1px solid #d6dfde; padding: 2mm 3mm; text-align: right; vertical-align: top; }
+  th { background: #f4f7f7; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <svg viewBox="0 0 100 100">
+    <path d="M50 12C27 12 9 27.5 9 46.5c0 9.6 4.6 18.3 12 24.5V88l16.3-8.4c4 1 8.3 1.5 12.7 1.5 23 0 41-15.5 41-34.6S73 12 50 12z" fill="#fff"/>
+    <rect x="28" y="30" width="44" height="32" rx="12" fill="#12807a"/><circle cx="40" cy="44" r="5.2" fill="#fff"/><circle cx="60" cy="44" r="5.2" fill="#fff"/>
+    <path d="M41 53.5q9 5 18 0" stroke="#fff" stroke-width="3.2" fill="none" stroke-linecap="round"/>
+    <line x1="50" y1="30" x2="50" y2="23" stroke="#12807a" stroke-width="3.2" stroke-linecap="round"/><circle cx="50" cy="21" r="3.6" fill="#f5b93f"/>
+  </svg>
+  <h1>راهنمای نصب افزونه‌ی بپرسید</h1>
+  <p>چت‌بات هوش مصنوعی فروش برای وردپرس و ووکامرس</p>
+  <div class="v">نسخه‌ی ۱.۰.۰ · beporsid.com</div>
+</div>
+
+<div class="sec">
+  <h2>بپرسید چیست؟</h2>
+  <p>بپرسید یک دستیار هوش مصنوعی فارسی است که روی سایت شما، به‌جای شما و به‌صورت ۲۴ ساعته به سؤال مشتری‌ها جواب می‌دهد. به محصولات، قیمت و موجودی واقعی ووکامرس وصل می‌شود، محصول جایگزین پیشنهاد می‌دهد، وضعیت سفارش را می‌گوید و هر جا لازم باشد گفتگو را به شما می‌سپارد.</p>
+  <p>این افزونه نصب را ساده می‌کند: <strong>نه کلید API لازم است و نه ویرایش قالب.</strong> فقط یک کد اتصال از پنل بپرسید می‌گیرید و در افزونه وارد می‌کنید.</p>
+  <div class="box"><strong>پیش‌نیازها:</strong> وردپرس ۵.۸ یا جدیدتر، PHP ۷.۴ یا جدیدتر. برای وصل شدن محصولات: ووکامرس فعال و سایت روی HTTPS.</div>
+</div>
+
+<div class="sec">
+  <h2><span class="n">۱</span>ثبت‌نام در بپرسید</h2>
+  <p>به آدرس <code>https://api.beporsid.com/dashboard.html</code> بروید و با شماره‌ی موبایلتان ثبت‌نام کنید. پلن آغازین رایگان است و هر ماه ۲۰۰ پاسخ دارد؛ کارت بانکی لازم نیست.</p>
+</div>
+
+<div class="sec">
+  <h2><span class="n">۲</span>نصب افزونه</h2>
+  <ol>
+    <li>فایل <code>beporsid-chatbot.zip</code> را دانلود کنید.</li>
+    <li>در پیشخوان وردپرس به <strong>افزونه‌ها ← افزودن ← بارگذاری افزونه</strong> بروید، فایل zip را انتخاب و نصب کنید.</li>
+    <li>روی <strong>فعال‌سازی</strong> بزنید. منوی تازه‌ای به اسم <strong>«بپرسید»</strong> در پیشخوان اضافه می‌شود.</li>
+  </ol>
+</div>
+
+<div class="sec page">
+  <h2><span class="n">۳</span>ساخت کد اتصال در پنل بپرسید</h2>
+  <p>در پنل بپرسید به <strong>تنظیمات ← اتصال فروشگاه ← ووکامرس</strong> بروید و در کادر «روش آسان: افزونه‌ی وردپرس بپرسید» روی <strong>«ساخت کد اتصال افزونه»</strong> بزنید و کد را کپی کنید.</p>
+  <img src="gallery-4.png">
+  <div class="cap">کادر افزونه‌ی وردپرس در پنل بپرسید</div>
+  <div class="box warn">کد اتصال فقط همان یک بار نشان داده می‌شود. اگر گمش کردید، کد تازه بسازید؛ کد قبلی باطل می‌شود.</div>
+</div>
+
+<div class="sec page">
+  <h2><span class="n">۴</span>وارد کردن کد در افزونه</h2>
+  <p>در پیشخوان وردپرس منوی <strong>«بپرسید»</strong> را باز کنید، کد را در کادر بچسبانید و <strong>«اتصال به بپرسید»</strong> را بزنید.</p>
+  <img src="gallery-1.png">
+  <div class="cap">صفحه‌ی اتصال افزونه در پیشخوان وردپرس</div>
+  <p>با زدن این دکمه، افزونه خودکار این کارها را انجام می‌دهد:</p>
+  <ul>
+    <li>یک کلید <strong>فقط خواندنی</strong> در ووکامرس (ووکامرس ← تنظیمات ← پیشرفته ← REST API) با نام <code>Beporsid chatbot</code> می‌سازد تا دستیار بتواند محصولات و وضعیت سفارش را بخواند. بپرسید با این کلید هیچ چیزی را در فروشگاه تغییر نمی‌دهد.</li>
+    <li>ویجت چت را در فوتر همه‌ی صفحه‌های سایت قرار می‌دهد. رنگ و جای ویجت از پنل بپرسید خوانده می‌شود.</li>
+  </ul>
+</div>
+
+<div class="sec page">
+  <h2><span class="n">۵</span>تمام! بررسی وضعیت</h2>
+  <p>بعد از اتصال، صفحه‌ی افزونه وضعیت را نشان می‌دهد: فروشگاه، فعال بودن ویجت، منبع محصولات و پلن.</p>
+  <img src="gallery-2.png">
+  <div class="cap">وضعیت بعد از اتصال موفق</div>
+  <p>سایت را باز کنید؛ حباب چت در گوشه‌ی صفحه دیده می‌شود. یک سؤال درباره‌ی یکی از محصولاتتان بپرسید:</p>
+  <img src="gallery-3.png">
+  <div class="cap">دستیار بپرسید روی فروشگاه، با کارت محصول و قیمت واقعی</div>
+</div>
+
+<div class="sec page">
+  <h2>بعد از نصب، چه کارهایی را انجام دهید؟</h2>
+  <ul>
+    <li><strong>قوانین فروشگاه:</strong> در پنل، شرایط ارسال، مرجوعی و گارانتی را بنویسید؛ پرتکرارترین سؤال مشتری‌ها همین‌هاست.</li>
+    <li><strong>پایگاه دانش:</strong> فایل PDF و Word، آدرس صفحه‌های سایت و سوال‌وجواب‌های آماده اضافه کنید.</li>
+    <li><strong>راه تماس با کارشناس:</strong> شماره یا لینک پشتیبانی را وارد کنید تا دستیار وقتی لازم است مشتری را به شما بسپارد.</li>
+    <li><strong>ظاهر ویجت:</strong> رنگ و جای ویجت را از پنل تغییر دهید؛ حداکثر تا ۱۲ ساعت بعد روی سایت اعمال می‌شود.</li>
+    <li><strong>سؤال‌های بی‌جواب:</strong> هر سؤالی که دستیار جوابش را نداشت در پنل فهرست می‌شود تا با یک کلیک جوابش را اضافه کنید.</li>
+  </ul>
+
+  <h2 style="margin-top:8mm">رفع مشکل</h2>
+  <table>
+    <tr><th style="width:38%">مشکل</th><th>راه‌حل</th></tr>
+    <tr><td>«کد اتصال نامعتبر است»</td><td>کد را کامل (با <code>bpwp_</code>) کپی کنید. اگر بعد از آن کد تازه‌ای ساخته‌اید، کد قبلی باطل شده است.</td></tr>
+    <tr><td>«ارتباط با سرور بپرسید برقرار نشد»</td><td>میزبان سایت درخواست‌های بیرونی را بسته است. از پشتیبانی هاست بخواهید دسترسی به <code>api.beporsid.com</code> را باز کند.</td></tr>
+    <tr><td>ویجت وصل شد ولی محصولات نه</td><td>سایت باید روی HTTPS باشد. اگر افزونه‌ی امنیتی (مثل Wordfence) دارید، دسترسی REST API ووکامرس را برای بپرسید باز کنید.</td></tr>
+    <tr><td>ویجت دو بار روی سایت دیده می‌شود</td><td>کد نصبی را که قبلاً دستی در قالب گذاشته بودید پاک کنید؛ افزونه خودش ویجت را قرار می‌دهد.</td></tr>
+    <tr><td>شاپفا یا پرتال هم وصل است</td><td>بپرسید از یک منبع محصول استفاده می‌کند. برای استفاده از ووکامرس، اتصال دیگر را در پنل قطع کنید.</td></tr>
+  </table>
+
+  <h3>قطع اتصال و حذف</h3>
+  <p>در صفحه‌ی افزونه «قطع اتصال» را بزنید. ویجت از سایت برداشته و کلید ووکامرسی که افزونه ساخته بود پاک می‌شود. حذف افزونه هم همین کار را انجام می‌دهد.</p>
+  <div class="box">پشتیبانی: از بخش «پشتیبانی» پنل بپرسید تیکت بزنید. اگر نصب برایتان سخت بود، خودمان انجامش می‌دهیم.</div>
+</div>
+
+</body>
+</html>
