@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+  // تم ذخیره‌شده قبل از رندر اعمال می‌شود تا صفحه اول روشن و یک لحظه بعد تیره نشود
+  try { const t = localStorage.getItem('beporsid_theme'); if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+<title>شرایط استفاده | بپرسید</title>
+<meta name="description" content="شرایط استفاده از پنل، ویجت چت و افزونه‌ی وردپرس بپرسید: حساب کاربری، پلن‌ها و پرداخت، جواب‌های هوش مصنوعی و استفاده‌ی مجاز.">
+<meta property="og:title" content="شرایط استفاده از بپرسید">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="بپرسید">
+<meta property="og:locale" content="fa_IR">
+<meta property="og:url" content="https://beporsid.com/terms/">
+<meta property="og:image" content="https://beporsid.com/og.jpg">
+<meta property="article:modified_time" content="2026-09-27">
+<meta name="theme-color" content="#12807a">
+<link rel="canonical" href="https://beporsid.com/terms/">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/favicon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebPage",
+  "name": "شرایط استفاده از بپرسید",
+  "url": "https://beporsid.com/terms/",
+  "inLanguage": "fa-IR",
+  "dateModified": "2026-09-27",
+  "publisher": {
+    "@id": "https://beporsid.com/#organization"
+  }
+}
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --firooze: #12807a; --firooze-deep: #0b5b57; --firooze-mist: #e6f2f1; --firooze-soft: #cfe6e4;
+    --saffron: #e0a13c; --saffron-mist: #fbf1df;
+    --ink: #13262b; --ink-soft: #5b7176; --ink-faint: #93a5a9;
+    --paper: #fcfbf8; --line: #e2e6e5; --line-soft: #eef1f0;
+    --radius: 18px;
+    --shadow-sm: 0 1px 2px rgba(19,38,43,.04), 0 6px 20px -10px rgba(19,38,43,.12);
+    --card: #fff;
+    --header-bg: rgba(252,251,248,.9);
+    --surface-deep: #13262b;
+    color-scheme: light;
+  }
+
+  /* ---------- تم تیره ---------- */
+  /* همان پالت صفحه‌ی اصلی و پنل داشبورد */
+  :root[data-theme="dark"] {
+    --firooze: #2fb3aa; --firooze-deep: #7fd6cf; --firooze-mist: #143634; --firooze-soft: #1f4c49;
+    --saffron: #e6ad52; --saffron-mist: #332a17;
+    --ink: #e6eeee; --ink-soft: #9fb3b5; --ink-faint: #6b8286;
+    --paper: #0f1a1c; --line: #27393d; --line-soft: #1f3034;
+    --card: #16262a;
+    --header-bg: rgba(15,26,28,.9);
+    --surface-deep: #0a1416;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px -10px rgba(0,0,0,.5);
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --firooze: #2fb3aa; --firooze-deep: #7fd6cf; --firooze-mist: #143634; --firooze-soft: #1f4c49;
+      --saffron: #e6ad52; --saffron-mist: #332a17;
+      --ink: #e6eeee; --ink-soft: #9fb3b5; --ink-faint: #6b8286;
+      --paper: #0f1a1c; --line: #27393d; --line-soft: #1f3034;
+      --card: #16262a;
+      --header-bg: rgba(15,26,28,.9);
+      --surface-deep: #0a1416;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px -10px rgba(0,0,0,.5);
+      color-scheme: dark;
+    }
+  }
+
+  /* دکمه‌ی تغییر تم در سربرگ */
+  .theme-btn {
+    display: grid; place-items: center; width: 34px; height: 34px; flex: none;
+    border: 1px solid var(--line); border-radius: 10px; background: var(--card);
+    color: var(--ink-soft); cursor: pointer; transition: color .15s, border-color .15s;
+  }
+  .theme-btn:hover { color: var(--firooze); border-color: var(--firooze-soft); }
+  .theme-btn .ic-sun { display: none; }
+  :root[data-theme="dark"] .theme-btn .ic-sun { display: block; }
+  :root[data-theme="dark"] .theme-btn .ic-moon { display: none; }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .theme-btn .ic-sun { display: block; }
+    :root:not([data-theme="light"]) .theme-btn .ic-moon { display: none; }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: 'Vazirmatn', Tahoma, sans-serif; background: var(--paper); color: var(--ink); line-height: 1.8; font-size: 16px; -webkit-font-smoothing: antialiased; }
+  a { color: var(--firooze); }
+  img, svg { max-width: 100%; }
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--saffron); outline-offset: 3px; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; background: var(--firooze); color: #fff !important; padding: 12px 24px; border-radius: 999px; font-weight: 700; font-size: 15px; border: 1.5px solid var(--firooze); transition: background .15s; }
+  .btn:hover { background: var(--firooze-deep); border-color: var(--firooze-deep); }
+
+  header { position: sticky; top: 0; z-index: 50; background: var(--header-bg); backdrop-filter: blur(14px); border-bottom: 1px solid var(--line); }
+  .nav { display: flex; align-items: center; justify-content: space-between; height: 72px; gap: 20px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 21px; letter-spacing: -.02em; text-decoration: none; color: var(--ink) !important; }
+  .brand-mark { width: 36px; height: 36px; border-radius: 11px; background: var(--firooze); display: grid; place-items: center; flex: none; }
+  .brand-mark svg { width: 19px; height: 19px; fill: #fff; }
+  .nav-links { display: flex; align-items: center; gap: 26px; font-size: 15px; font-weight: 500; }
+  .nav-links a { text-decoration: none; color: var(--ink-soft) !important; }
+  .nav-links a:hover { color: var(--firooze) !important; }
+  @media (max-width: 760px) { .nav-links { display: none; } }
+
+  .crumbs { padding: 20px 0 0; font-size: 13px; color: var(--ink-faint); }
+  .crumbs a { color: var(--ink-faint); text-decoration: none; }
+  .crumbs a:hover { color: var(--firooze); }
+
+  article { padding: 24px 0 90px; }
+  .art-head { max-width: 46em; margin: 0 auto 44px; text-align: center; }
+  .kicker { display: inline-block; color: var(--firooze); font-weight: 700; font-size: 13.5px; letter-spacing: .02em; margin: 18px 0 16px; padding: 4px 12px; background: var(--firooze-mist); border-radius: 999px; }
+  h1 { font-size: clamp(28px, 3.6vw, 42px); font-weight: 900; letter-spacing: -.03em; line-height: 1.4; }
+  .art-meta { margin-top: 18px; display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; font-size: 13.5px; color: var(--ink-faint); }
+
+  .art-body { max-width: 46em; margin: 0 auto; font-size: 17px; color: var(--ink); }
+  .art-body > p { margin-bottom: 22px; color: var(--ink-soft); line-height: 1.95; }
+  .art-body h2 { font-size: 25px; font-weight: 800; letter-spacing: -.02em; margin: 48px 0 18px; color: var(--ink); }
+  .art-body h3 { font-size: 19px; font-weight: 700; margin: 30px 0 12px; color: var(--ink); }
+  .art-body ul, .art-body ol { margin: 0 0 22px; padding-inline-start: 24px; color: var(--ink-soft); }
+  .art-body li { margin-bottom: 10px; line-height: 1.9; }
+  .art-body strong { color: var(--ink); font-weight: 700; }
+  .art-body a { text-decoration: underline; text-decoration-color: var(--firooze-soft); text-underline-offset: 3px; }
+
+  .toc { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 22px 26px; margin-bottom: 40px; }
+  .toc b { display: block; font-size: 14px; margin-bottom: 12px; }
+  .toc ol { margin: 0; padding-inline-start: 20px; font-size: 14.5px; color: var(--ink-soft); }
+  .toc li { margin-bottom: 7px; }
+  .toc a { text-decoration: none; color: var(--ink-soft); }
+  .toc a:hover { color: var(--firooze); }
+
+  .callout {
+    background: var(--firooze-mist); border: 1px solid var(--firooze-soft); border-radius: 14px;
+    padding: 20px 24px; margin: 28px 0; font-size: 15px; color: var(--firooze-deep); line-height: 1.85;
+  }
+  .callout b { display: block; margin-bottom: 6px; font-size: 14px; }
+
+  .checklist { list-style: none; padding: 0; margin: 0 0 22px; }
+  .checklist li { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; color: var(--ink-soft); line-height: 1.85; }
+  .checklist .n { flex: none; width: 28px; height: 28px; border-radius: 9px; background: var(--firooze); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 13px; }
+  .checklist li > div { flex: 1; min-width: 0; text-align: right; }
+
+  table.cmp { width: 100%; border-collapse: collapse; margin: 8px 0 26px; font-size: 14.5px; }
+  table.cmp th, table.cmp td { border: 1px solid var(--line); padding: 12px 14px; text-align: right; }
+  table.cmp th { background: var(--paper); font-weight: 700; }
+  table.cmp td { color: var(--ink-soft); }
+
+  .cta-box {
+    background: var(--surface-deep); color: #fff; border-radius: 24px; padding: 48px 36px; text-align: center;
+    margin: 56px 0 8px; position: relative; overflow: hidden;
+  }
+  .cta-box::before { content: ''; position: absolute; width: 340px; height: 340px; border-radius: 50%; background: radial-gradient(circle, rgba(18,128,122,.5), transparent 65%); top: -160px; right: -80px; }
+  .cta-box > * { position: relative; z-index: 1; }
+  .cta-box h2 { color: #fff; font-size: 24px; margin: 0 0 12px; }
+  .cta-box p { color: #a7bcc0; margin-bottom: 24px; font-size: 15px; }
+  .cta-box .btn { background: var(--saffron); border-color: var(--saffron); color: #3d2a06 !important; }
+  .cta-box .btn:hover { background: #eeb055; border-color: #eeb055; }
+
+  .faq-box { margin-top: 40px; }
+  .faq-item { border: 1px solid var(--line); border-radius: 14px; padding: 18px 22px; margin-bottom: 12px; background: var(--card); }
+  .faq-item h3 { margin: 0 0 8px; font-size: 16px; }
+  .faq-item p { margin: 0; color: var(--ink-soft); font-size: 15px; }
+
+  .share-row { display: flex; gap: 10px; align-items: center; justify-content: center; margin-top: 40px; font-size: 13.5px; color: var(--ink-faint); }
+
+  footer { padding: 40px 0 32px; border-top: 1px solid var(--line); margin-top: 40px; text-align: center; color: var(--ink-faint); font-size: 13.5px; }
+  footer a { color: var(--firooze); text-decoration: none; }
+
+  .art-body code { direction: ltr; unicode-bidi: embed; background: var(--line-soft); padding: 1px 6px; border-radius: 5px; font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a class="brand" href="/">
+      <span class="brand-mark"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.03 2 11c0 2.44 1.15 4.65 3 6.3V22l4.1-2.05c.93.2 1.9.3 2.9.3 5.52 0 10-4.03 10-9S17.52 2 12 2z"/></svg></span>
+      بپرسید
+    </a>
+    <nav class="nav-links">
+      <a href="/#features">امکانات</a>
+      <a href="/#plans">تعرفه‌ها</a>
+      <a href="/blog/">بلاگ</a>
+    </nav>
+    <button class="theme-btn" onclick="toggleTheme()" aria-label="تغییر حالت روشن و تیره" title="حالت روشن / تیره">
+        <svg class="ic-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+        <svg class="ic-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+      <a href="https://api.beporsid.com/dashboard.html" class="btn">شروع رایگان</a>
+  </div>
+</header>
+
+<div class="wrap crumbs"><a href="/">بپرسید</a> ‹ شرایط استفاده</div>
+<article>
+  <div class="wrap">
+    <div class="art-head">
+      <span class="kicker">شرایط استفاده</span>
+      <h1>شرایط استفاده از بپرسید</h1>
+      <div class="art-meta"><span>آخرین به‌روزرسانی: ۵ مهر ۱۴۰۵</span></div>
+    </div>
+    <div class="art-body">
+      <p>با ساختن حساب در بپرسید یا استفاده از ویجت و افزونه‌ی وردپرس آن، این شرایط را می‌پذیرید. بپرسید (beporsid.com) یک سرویس اینترنتی است که یک دستیار هوش مصنوعی را روی سایت فروشگاه شما قرار می‌دهد تا به سؤال مشتری‌ها جواب بدهد.</p>
+
+      <h2 id="account">۱. حساب کاربری</h2>
+      <ul>
+        <li>ورود با شماره‌ی موبایل و کد پیامکی انجام می‌شود. مسئولیت حفظ دسترسی به این شماره و هر کاری که با حساب شما انجام شود با خودتان است.</li>
+        <li>اطلاعاتی که هنگام ثبت‌نام و اتصال فروشگاه وارد می‌کنید باید درست و متعلق به خودتان باشد. فقط فروشگاهی را وصل کنید که مالک آن هستید یا اجازه‌ی مدیریتش را دارید.</li>
+      </ul>
+
+      <h2 id="plans">۲. پلن‌ها، پرداخت و تمدید</h2>
+      <ul>
+        <li>پلن آغازین رایگان است و سقف ماهانه‌ی پاسخ دارد. پلن‌های پولی ماهانه یا سالانه پرداخت می‌شوند و قیمت و سقف هر کدام در <a href="/#plans">صفحه‌ی تعرفه‌ها</a> آمده است.</li>
+        <li>اشتراک پولی خودکار تمدید نمی‌شود و مبلغی بدون اقدام خودتان از شما کسر نمی‌شود. پیش از پایان اشتراک پیامک یادآوری می‌گیرید و برای ادامه‌ی استفاده از امکانات پلن باید تمدید کنید. با پایان اشتراک، اطلاعات شما پاک نمی‌شود.</li>
+        <li>اگر سقف پاسخ ماهانه پر شود، دستیار تا ابتدای ماه بعد یا تا ارتقای پلن جواب نمی‌دهد.</li>
+        <li>قیمت‌ها ممکن است تغییر کند؛ تغییر قیمت روی دوره‌ای که از قبل پرداخت کرده‌اید اثر ندارد.</li>
+        <li>برای درخواست بازگشت وجه یا مشکل پرداخت، از بخش «پشتیبانی» پنل تیکت بزنید تا مطابق قوانین تجارت الکترونیک رسیدگی شود.</li>
+      </ul>
+
+      <h2 id="ai">۳. جواب‌های هوش مصنوعی</h2>
+      <ul>
+        <li>دستیار از روی محصولات، قوانین و پایگاه دانشی که شما وارد یا وصل کرده‌اید جواب می‌دهد. درستی و به‌روز بودن این اطلاعات بر عهده‌ی صاحب فروشگاه است.</li>
+        <li>با وجود همه‌ی تلاش ما، جواب هوش مصنوعی ممکن است گاهی ناقص یا نادرست باشد. تعهدات فروش (قیمت نهایی، زمان ارسال، شرایط مرجوعی) همان است که در سایت و فاکتور فروشگاه آمده، نه آنچه دستیار در گفتگو گفته است.</li>
+        <li>توصیه می‌کنیم گفتگوها را در پنل مرور کنید و برای موضوعاتی مثل لغو سفارش یا مشکل پرداخت، راه تماس با کارشناس را فعال نگه دارید.</li>
+      </ul>
+
+      <h2 id="use">۴. استفاده‌ی مجاز</h2>
+      <p>استفاده از بپرسید برای این موارد مجاز نیست:</p>
+      <ul>
+        <li>فروش یا تبلیغ کالا و خدماتی که طبق قوانین جمهوری اسلامی ایران غیرمجاز است.</li>
+        <li>فریب مشتری، جمع‌آوری اطلاعات افراد بدون اطلاع آن‌ها، یا ارسال هرزنامه.</li>
+        <li>تلاش برای دور زدن محدودیت‌ها، نفوذ به سرویس، یا بار گذاشتن عمدی روی آن.</li>
+      </ul>
+      <p>در صورت تخلف، بپرسید می‌تواند پس از اطلاع‌رسانی دسترسی حساب را محدود یا مسدود کند.</p>
+
+      <h2 id="data">۵. اطلاعات و مالکیت محتوا</h2>
+      <ul>
+        <li>محتوایی که وارد می‌کنید و گفتگوهای مشتری‌هایتان متعلق به خودتان است. بپرسید فقط برای ارائه‌ی همین سرویس از آن استفاده می‌کند.</li>
+        <li>اگر روی سایتتان فرم شروع گفتگو (گرفتن نام و شماره‌ی مشتری) را فعال می‌کنید، اطلاع دادن به مشتری‌ها و رعایت حریم خصوصی آن‌ها بر عهده‌ی شماست.</li>
+        <li>جزئیات نحوه‌ی نگهداری و حفاظت اطلاعات در <a href="/privacy/">سیاست حریم خصوصی</a> آمده است.</li>
+      </ul>
+
+      <h2 id="service">۶. دسترس‌پذیری سرویس</h2>
+      <p>تلاش می‌کنیم بپرسید همیشه در دسترس باشد، ولی ممکن است به‌خاطر به‌روزرسانی، اختلال اینترنت یا مشکل سرویس‌هایی که به آن‌ها وابسته‌ایم (مثل سرویس هوش مصنوعی یا پیامک)، مدتی کوتاه قطع یا کند شود. بپرسید مسئول زیان غیرمستقیم ناشی از این قطعی‌ها، مثل فروش ازدست‌رفته، نیست.</p>
+
+      <h2 id="wp">۷. افزونه‌ی وردپرس</h2>
+      <p>افزونه‌ی وردپرس بپرسید با مجوز GPLv2 یا بالاتر منتشر می‌شود. استفاده از سرویسی که افزونه به آن وصل می‌شود (پنل، دستیار و ویجت) تابع همین شرایط است.</p>
+
+      <h2 id="end">۸. قطع همکاری</h2>
+      <p>هر وقت بخواهید می‌توانید استفاده را متوقف کنید؛ برای حذف کامل حساب از بخش «پشتیبانی» پنل تیکت بزنید. با قطع اتصال یا حذف افزونه‌ی وردپرس، ویجت از سایت شما برداشته می‌شود.</p>
+
+      <h2 id="changes">۹. تغییر این شرایط</h2>
+      <p>این شرایط ممکن است به‌روز شود. نسخه‌ی تازه با تاریخ جدید در همین صفحه منتشر می‌شود و تغییرات مهم از طریق پنل یا پیامک اطلاع داده می‌شود. ادامه‌ی استفاده پس از آن، یعنی پذیرش نسخه‌ی تازه.</p>
+
+      <h2 id="contact">۱۰. تماس</h2>
+      <p>تیکت در بخش «پشتیبانی» پنل بپرسید، یا تلفن <span dir="ltr">۰۵۱-۳۶۹۱۱۳۲۴</span>. نشانی: مشهد، شهرک غرب، بلوار شریعتی، یوسفیه ۳/۳، پارک موضوعی دانش، ساختمان اداری.</p>
+    </div>
+  </div>
+</article>
+
+<footer>
+  <div class="wrap">© <span id="y"></span> بپرسید — <a href="/blog/">بلاگ</a> · <a href="/">صفحه‌ی اصلی</a> · <a href="/terms/">شرایط استفاده</a> · <a href="/privacy/">حریم خصوصی</a></div>
+</footer>
+<script>document.getElementById('y').textContent = new Date().getFullYear();</script>
+
+<script>
+  // تم روشن/تیره: اگر کاربر انتخابی نکرده باشد، تنظیم سیستم عامل ملاک است
+  function currentTheme() {
+    const t = document.documentElement.dataset.theme;
+    if (t === 'dark' || t === 'light') return t;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  function toggleTheme() {
+    const next = currentTheme() === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem('beporsid_theme', next); } catch (e) {}
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', next === 'dark' ? '#0f1a1c' : '#12807a');
+  }
+</script>
+</body>
+</html>

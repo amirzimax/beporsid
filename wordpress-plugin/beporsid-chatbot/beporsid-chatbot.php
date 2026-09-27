@@ -400,6 +400,11 @@ final class Beporsid_Chatbot {
 					<?php endif; ?>
 				</div>
 			<?php endif; ?>
+			<p class="description" style="margin-top:14px">
+				با اتصال، آدرس سایت، کلید فقط‌خواندنی ووکامرس و پیام‌های گفتگوی بازدیدکننده‌ها برای پاسخ به سرور بپرسید فرستاده می‌شود.
+				<a href="https://beporsid.com/terms/" target="_blank" rel="noopener">شرایط استفاده</a> ·
+				<a href="https://beporsid.com/privacy/" target="_blank" rel="noopener">حریم خصوصی</a>
+			</p>
 		</div>
 		<?php
 	}

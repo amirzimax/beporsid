@@ -13,6 +13,7 @@ const { execFileSync } = require('child_process');
 const ROOT = path.resolve(__dirname, '..');
 const SITE = 'https://beporsid.com/';
 // پوشه‌هایی که صفحه‌ی سایت اصلی نیستند
+const LEGAL = new Set(['terms', 'privacy']);
 const SKIP = new Set(['node_modules', 'public', 'scripts', 'brand', 'backups', '.git', '.claude', '.vscode']);
 
 function findPages(dir = ROOT, depth = 0) {
@@ -50,8 +51,10 @@ function sitePages() {
     const rel = path.relative(ROOT, path.dirname(file)).split(path.sep).join('/');
     const depth = rel ? rel.split('/').length : 0;
     // ریشه ۱، صفحه‌های فرود و فهرست بلاگ (یک سطح) ۰.۸ تا ۰.۹، مقاله‌ها ۰.۷
-    const priority = !rel ? '1.0' : rel === 'blog' ? '0.8' : depth === 1 ? '0.9' : '0.7';
-    const changefreq = !rel || rel === 'blog' ? 'weekly' : 'monthly';
+    // صفحه‌های قانونی (شرایط استفاده، حریم خصوصی) باید ایندکس شوند ولی اولویت ندارند
+    const legal = LEGAL.has(rel);
+    const priority = !rel ? '1.0' : legal ? '0.3' : rel === 'blog' ? '0.8' : depth === 1 ? '0.9' : '0.7';
+    const changefreq = legal ? 'yearly' : !rel || rel === 'blog' ? 'weekly' : 'monthly';
     pages.push({ loc: canonical, dir: rel, lastmod: lastmod(file, html), priority, changefreq });
   }
   return pages.sort((a, b) => b.priority - a.priority || a.loc.localeCompare(b.loc));

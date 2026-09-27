@@ -29,7 +29,8 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 * هنگام اتصال: آدرس سایت و یک کلید REST «فقط خواندنی» ووکامرس به https://api.beporsid.com فرستاده می‌شود تا دستیار بتواند محصولات و وضعیت سفارش را بخواند.
 * در صفحه‌های سایت: اسکریپت ویجت از https://api.beporsid.com بارگذاری می‌شود و پیام‌هایی که بازدیدکننده در چت می‌نویسد برای پاسخ به همین سرویس فرستاده می‌شود.
 
-شرایط استفاده و حریم خصوصی: https://beporsid.com/
+* شرایط استفاده: https://beporsid.com/terms/
+* حریم خصوصی: https://beporsid.com/privacy/
 
 == Installation ==
 
