@@ -52,7 +52,7 @@ function rollingWindow(now = Date.now()) {
 function buildReport(shop, w) {
   const s = periodStats(shop.id, sqlTime(w.start), sqlTime(w.end));
   const p = periodStats(shop.id, sqlTime(w.prevStart), sqlTime(w.start));
-  const plan = billing.PLANS[shop.plan] || billing.PLANS.starter;
+  const plan = billing.effectivePlan(shop);
   const used = getMonthlyUsage(shop.id);
   const usedPct = plan.responses ? Math.round(used / plan.responses * 100) : 0;
 

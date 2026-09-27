@@ -104,4 +104,20 @@ async function verifyPayment({ amountToman, authority }) {
   return { refId: data.data.ref_id, cardPan: data.data.card_pan || null, alreadyVerified: code === 101 };
 }
 
-module.exports = { PLANS, requestPayment, verifyPayment, STARTPAY_BASE };
+// پلنی که فروشگاه واقعاً از امکاناتش استفاده می‌کند. پلن پولی تا تاریخ انقضا به‌علاوه‌ی یک
+// مهلت کوتاه فعال است؛ بعد از آن سقف‌ها و امکانات به پلن رایگان برمی‌گردد (اطلاعات پاک نمی‌شود).
+// مهلت با پیامک «پایان اشتراک» هم‌زمان است که تا ۳ روز بعد از انقضا فرستاده می‌شود.
+const GRACE_DAYS = 3;
+
+function effectivePlan(shop, now = Date.now()) {
+  const plan = PLANS[shop && shop.plan] || PLANS.starter;
+  if (plan.free) return plan;
+  // پلن پولی همیشه با تاریخ انقضا ساخته می‌شود (extendShopPlan)؛ اگر تاریخی نبود، دستی تنظیم
+  // شده و قطعش نمی‌کنیم
+  if (!shop.plan_expires_at) return plan;
+  const expires = Date.parse(String(shop.plan_expires_at).replace(' ', 'T') + 'Z');
+  if (isNaN(expires)) return plan;
+  return now < expires + GRACE_DAYS * 86400000 ? plan : PLANS.starter;
+}
+
+module.exports = { PLANS, GRACE_DAYS, effectivePlan, requestPayment, verifyPayment, STARTPAY_BASE };

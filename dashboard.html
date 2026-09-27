@@ -3068,9 +3068,11 @@
         : `پلن ${s.plan_name} تا ${fullTime(s.plan_expires_at)} فعال است.`);
     } else {
       badge.textContent = 'بدون اشتراک فعال'; badge.className = 'badge disconnected';
-      setText('billing-status-text', s.plan_expires_at
-        ? `اشتراک ${s.plan_name || ''} در ${fullTime(s.plan_expires_at)} منقضی شده است. برای ادامه‌ی کار چت‌بات، یک پلن را تمدید کنید.`
-        : 'هنوز پلنی فعال نکرده‌اید. با پلن رایگان «آغازین» شروع کنید یا مستقیم یک پلن بخرید.');
+      setText('billing-status-text', !s.plan_expires_at
+        ? 'هنوز پلنی فعال نکرده‌اید. با پلن رایگان «آغازین» شروع کنید یا مستقیم یک پلن بخرید.'
+        : s.in_grace
+          ? `اشتراک ${s.plan_name || ''} در ${fullTime(s.plan_expires_at)} منقضی شده است. تا ${fullTime(s.grace_until)} مهلت تمدید دارید؛ بعد از آن سقف‌ها به پلن رایگان برمی‌گردد.`
+          : `اشتراک ${s.plan_name || ''} در ${fullTime(s.plan_expires_at)} منقضی شده و حساب با سقف‌های پلن رایگان «${s.effective_plan_name || 'آغازین'}» کار می‌کند. برای برگشتن امکانات، پلن را تمدید کنید.`);
     }
 
     const grid = $('billing-usage-grid');

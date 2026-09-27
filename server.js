@@ -1722,7 +1722,7 @@ app.post('/api/wp-plugin/connect', wpPluginLimiter, async (req, res) => {
 app.post('/api/wp-plugin/status', wpPluginLimiter, (req, res) => {
   const shop = shopFromWpToken(req);
   if (!shop) return res.status(401).json({ error: WP_BAD_TOKEN });
-  const plan = billing.PLANS[shop.plan] || billing.PLANS.starter;
+  const plan = billing.effectivePlan(shop);
   res.json({
     connected: !!shop.wp_connected_at, site_key: shop.site_key, shop_name: shop.shop_name || '',
     plan: plan.name, platform: getCommercePlatform(shop)
@@ -2004,7 +2004,8 @@ app.delete('/api/products/:id', requireAuth, (req, res) => {
 // حدود مصرف فروشگاه بر اساس پلنش. حساب‌های قدیمی/بدون‌پلن (plan='trial') به سطح آغازین
 // (پلن رایگان) محدود می‌شن، نه صفر - وگرنه یک فروشگاه فعال یک‌شبه قفل می‌شد.
 function getPlanLimits(shop) {
-  return billing.PLANS[shop.plan] || billing.PLANS.starter;
+  // با در نظر گرفتن تاریخ انقضا؛ اشتراک تمام‌شده (بعد از مهلت) سقف‌های پلن رایگان را می‌گیرد
+  return billing.effectivePlan(shop);
 }
 
 app.get('/api/billing/plans', (req, res) => {
@@ -2013,16 +2014,24 @@ app.get('/api/billing/plans', (req, res) => {
 
 app.get('/api/billing/status', requireAuth, (req, res) => {
   const shop = req.shop;
+  const purchased = billing.PLANS[shop.plan] || billing.PLANS.starter;
+  // سقف‌های واقعی (با در نظر گرفتن انقضا و مهلت)
   const limits = getPlanLimits(shop);
   const now = new Date();
   const expiresAt = shop.plan_expires_at;
+  const expiresMs = expiresAt ? new Date(expiresAt.replace(' ', 'T') + 'Z').getTime() : null;
   // پلن آغازین (رایگان) منقضی نمی‌شه؛ بقیه‌ی پلن‌ها فقط تا plan_expires_at فعال‌ان
-  const active = shop.plan === 'starter' || (!!expiresAt && new Date(expiresAt.replace(' ', 'T') + 'Z') > now);
+  const active = !!purchased.free || (!!expiresMs && expiresMs > now.getTime());
+  // منقضی شده ولی هنوز در مهلت چندروزه، با همان سقف‌های پلن خریداری‌شده
+  const inGrace = !active && !purchased.free && limits === purchased;
   res.json({
     plan: shop.plan,
-    plan_name: limits.name,
-    is_free: !!limits.free,
+    plan_name: purchased.name,
+    effective_plan_name: limits.name,
+    is_free: !!purchased.free,
     active: !!active,
+    in_grace: inGrace,
+    grace_until: inGrace ? new Date(expiresMs + billing.GRACE_DAYS * 86400000).toISOString().slice(0, 19).replace('T', ' ') : null,
     plan_expires_at: expiresAt,
     limits: { responses: limits.responses, products: limits.products, qa: limits.qa, links: limits.links, files: limits.files },
     usage: {
@@ -2251,7 +2260,7 @@ function telegramWebhookUrl(secret) {
 }
 
 function shopSupportsTelegram(shop) {
-  const plan = billing.PLANS[shop.plan];
+  const plan = billing.effectivePlan(shop);
   return !!(plan && Array.isArray(plan.channels) && plan.channels.includes('telegram'));
 }
 
